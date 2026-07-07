@@ -115,19 +115,19 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 .boss-spirit{background-image:url('game-assets/boss-spirit.webp');}
 /* NPC立绘卡片 */
 .npc-portrait{
-    width:100%;height:160px;border-radius:0.7rem;background-size:cover;
-    background-position:center 15%;margin:0.2rem 0;border:1px solid rgba(200,170,100,0.4);
+    width:100%;height:180px;border-radius:0.7rem;background-size:cover;
+    background-position:center top;margin:0.2rem 0;border:1px solid rgba(200,170,100,0.4);
     box-shadow:0 0 15px rgba(200,160,80,0.15);
-    position:relative;overflow:hidden;min-height:120px;
+    position:relative;overflow:hidden;min-height:140px;
 }
 .npc-portrait::after{
-    content:'';position:absolute;bottom:0;left:0;right:0;height:40%;
-    background:linear-gradient(to top,rgba(20,18,35,0.6),transparent);
+    content:'';position:absolute;bottom:0;left:0;right:0;height:35%;
+    background:linear-gradient(to top,rgba(20,18,35,0.65),transparent);
     pointer-events:none;
 }
 /* 移动端立绘适配 */
 @media(max-width:380px){
-    .npc-portrait{height:130px;background-position:center 10%;}
+    .npc-portrait{height:150px;background-position:center top;}
     .scene-portrait{height:90px;}
     .boss-img{height:100px;}
     .avatar-box{width:38px;height:38px;}
@@ -157,6 +157,62 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
     display:flex;align-items:center;gap:0.4rem;padding:0.2rem 0;
 }
 .scene-icon{font-size:1.4rem;}
+/* 保存提示 */
+.toast{position:fixed;top:12px;left:50%;transform:translateX(-50%) translateY(-60px);
+    background:rgba(40,35,60,0.95);color:#ffe8a0;padding:0.5rem 1.2rem;border-radius:0.5rem;
+    border:1px solid rgba(200,170,100,0.5);z-index:9999;font-size:0.8rem;
+    transition:transform 0.3s,opacity 0.3s;opacity:0;pointer-events:none;
+    box-shadow:0 4px 20px rgba(0,0,0,0.4);}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+/* ===== 突破/渡劫炫酷动画 ===== */
+.trib-overlay{position:fixed;inset:0;z-index:9998;display:none;
+    background:radial-gradient(ellipse at center,rgba(10,5,30,0.92),rgba(0,0,0,0.97));
+    align-items:center;justify-content:center;flex-direction:column;overflow:hidden;}
+.trib-overlay.show{display:flex;animation:tribFadeIn 0.3s ease;}
+@keyframes tribFadeIn{from{opacity:0;}to{opacity:1;}}
+/* 雷云 */
+.trib-cloud{position:absolute;top:-10%;left:50%;transform:translateX(-50%);
+    width:280px;height:120px;
+    background:radial-gradient(ellipse at center,rgba(60,40,100,0.9),rgba(20,10,40,0.4) 60%,transparent);
+    border-radius:50%;filter:blur(8px);
+    animation:tribCloud 0.6s ease-out forwards;}
+@keyframes tribCloud{from{top:-20%;opacity:0;}to{top:5%;opacity:1;}}
+/* 闪电 */
+.trib-bolt{position:absolute;top:8%;left:50%;width:3px;height:0;
+    background:linear-gradient(to bottom,transparent,#fff,#a0d0ff,#fff,transparent);
+    box-shadow:0 0 20px #a0d0ff,0 0 40px #6090ff;
+    transform:translateX(-50%);
+    animation:tribBolt 0.15s ease-out forwards;}
+@keyframes tribBolt{0%{height:0;}50%{height:60vh;opacity:1;}100%{height:60vh;opacity:0.3;}}
+/* 金光爆发 */
+.trib-burst{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);
+    width:0;height:0;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,240,180,0.95),rgba(255,200,80,0.6) 30%,rgba(255,160,40,0.2) 60%,transparent);
+    animation:tribBurst 1.2s ease-out forwards;}
+@keyframes tribBurst{0%{width:0;height:0;opacity:0;}20%{opacity:1;}100%{width:120vw;height:120vw;opacity:0;}}
+/* 粒子环 */
+.trib-ring{position:absolute;top:40%;left:50%;width:0;height:0;
+    border:3px solid rgba(255,220,120,0.8);border-radius:50%;
+    transform:translate(-50%,-50%);
+    animation:tribRing 1s ease-out forwards;}
+@keyframes tribRing{0%{width:0;height:0;opacity:1;border-width:4px;}100%{width:80vw;height:80vw;opacity:0;border-width:1px;}}
+/* 大字 */
+.trib-text{position:relative;z-index:2;font-size:2.2rem;font-weight:bold;
+    letter-spacing:0.2rem;text-align:center;
+    animation:tribTextIn 0.5s ease-out 0.3s both;}
+.trib-text.success{color:#ffe8a0;text-shadow:0 0 20px rgba(255,200,80,0.8),0 0 40px rgba(255,160,40,0.5),0 0 8px rgba(255,240,180,0.6);}
+.trib-text.fail{color:#ff6060;text-shadow:0 0 20px rgba(255,60,60,0.8),0 0 40px rgba(200,20,20,0.4);}
+@keyframes tribTextIn{from{transform:scale(0.3);opacity:0;}to{transform:scale(1);opacity:1;}}
+.trib-sub{font-size:0.9rem;color:#c0b0d0;margin-top:0.5rem;letter-spacing:0.1rem;
+    animation:tribTextIn 0.5s ease-out 0.8s both;}
+/* 飞升碎片 */
+.trib-spark{position:absolute;width:4px;height:4px;border-radius:50%;
+    background:#ffe8a0;box-shadow:0 0 6px #ffd060;pointer-events:none;}
+@keyframes tribSpark{
+    0%{transform:scale(0) translateY(0);opacity:0;}
+    30%{transform:scale(1.5) translateY(-20px);opacity:1;}
+    100%{transform:scale(0.5) translateY(60px);opacity:0;}
+}
 </style>
 </head>
 <body>
@@ -193,6 +249,8 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 </div>
 </div>
 <div id="modalC"></div>
+<div class="toast" id="toast">已保存</div>
+<div class="trib-overlay" id="tribOverlay"></div>
 
 <script>
 var G = {
@@ -520,29 +578,29 @@ var G = {
     // ===== 事件系统 =====
     EVP: {
         cv:[
-            {d:"灵气潮汐来袭，修炼事半功倍！",o:[{t:"全力吸收(+80修为)",a:function(){G.s.cv=Math.min(G.s.cv+80,G.maxCv());G.log("修为大增");}},{t:"正常修炼(+20)",a:function(){G.s.cv=Math.min(G.s.cv+20,G.maxCv());}}]},
-            {d:"识海浮现远古符文",o:[{t:"参悟(+60,寿限-2)",a:function(){G.s.cv=Math.min(G.s.cv+60,G.maxCv());G.rma(2);G.log("参悟符文");}},{t:"记录(+10)",a:function(){G.s.cv=Math.min(G.s.cv+10,G.maxCv());}}]},
-            {d:"心魔入侵",o:[{t:"斩情(+50,亲密度-10)",a:function(){if(G.s.par)G.s.par.it-=10;G.s.cv=Math.min(G.s.cv+50,G.maxCv());}},{t:"深陷(-20)",a:function(){G.s.cv=Math.max(0,G.s.cv-20);}}]},
-            {d:"灵根异动",o:[{t:"引导(+100,灵根重置)",a:function(){G.s.rt=Object.keys(G.ROOTS)[Math.floor(Math.random()*5)];G.s.cv=Math.min(G.s.cv+100,G.maxCv());G.recalc();G.log("灵根重塑");}},{t:"压制(+20)",a:function(){G.s.cv=Math.min(G.s.cv+20,G.maxCv());}}]},
-            {d:"天降灵雨",o:[{t:"沐浴(+60修为,+30灵力)",a:function(){G.s.cv=Math.min(G.s.cv+60,G.maxCv());G.s.sp=Math.min(G.s.msp,G.s.sp+30);}},{t:"收集(+40灵石)",a:function(){G.s.ss+=40;}}]},
-            {d:"顿悟剑意",o:[{t:"领悟(+90)",a:function(){G.s.cv=Math.min(G.s.cv+90,G.maxCv());G.log("顿悟");}},{t:"浅尝(+30)",a:function(){G.s.cv=Math.min(G.s.cv+30,G.maxCv());}}]}
+            {d:"灵气潮汐来袭，修炼事半功倍！",o:[{t:"全力吸收(+15修为)",a:function(){G.s.cv=Math.min(G.s.cv+15,G.maxCv());G.log("修为微增");}},{t:"正常修炼(+5)",a:function(){G.s.cv=Math.min(G.s.cv+5,G.maxCv());}}]},
+            {d:"识海浮现远古符文",o:[{t:"参悟(+10,寿限-2)",a:function(){G.s.cv=Math.min(G.s.cv+10,G.maxCv());G.rma(2);G.log("参悟符文");}},{t:"记录(+3)",a:function(){G.s.cv=Math.min(G.s.cv+3,G.maxCv());}}]},
+            {d:"心魔入侵",o:[{t:"斩情(+8,亲密度-10)",a:function(){if(G.s.par)G.s.par.it-=10;G.s.cv=Math.min(G.s.cv+8,G.maxCv());}},{t:"深陷(-3)",a:function(){G.s.cv=Math.max(0,G.s.cv-3);}}]},
+            {d:"灵根异动",o:[{t:"引导(+12,灵根重置)",a:function(){G.s.rt=Object.keys(G.ROOTS)[Math.floor(Math.random()*5)];G.s.cv=Math.min(G.s.cv+12,G.maxCv());G.recalc();G.log("灵根重塑");}},{t:"压制(+4)",a:function(){G.s.cv=Math.min(G.s.cv+4,G.maxCv());}}]},
+            {d:"天降灵雨",o:[{t:"沐浴(+10修为,+15灵力)",a:function(){G.s.cv=Math.min(G.s.cv+10,G.maxCv());G.s.sp=Math.min(G.s.msp,G.s.sp+15);}},{t:"收集(+40灵石)",a:function(){G.s.ss+=40;}}]},
+            {d:"顿悟剑意",o:[{t:"领悟(+12)",a:function(){G.s.cv=Math.min(G.s.cv+12,G.maxCv());G.log("顿悟");}},{t:"浅尝(+4)",a:function(){G.s.cv=Math.min(G.s.cv+4,G.maxCv());}}]}
         ],
         wd:[
-            {d:"受伤散修求助",o:[{t:"救治(-20灵石,+80)",a:function(){if(G.s.ss>=20){G.s.ss-=20;G.s.cv=Math.min(G.s.cv+80,G.maxCv());G.log("救治散修");}}},{t:"劫掠(+40,寿限-3)",a:function(){G.s.ss+=40;G.rma(3);G.log("劫掠");}},{t:"离开",a:function(){G.log("离去");}}]},
+            {d:"受伤散修求助",o:[{t:"救治(-20灵石,+12)",a:function(){if(G.s.ss>=20){G.s.ss-=20;G.s.cv=Math.min(G.s.cv+12,G.maxCv());G.log("救治散修");}}},{t:"劫掠(+40,寿限-3)",a:function(){G.s.ss+=40;G.rma(3);G.log("劫掠");}},{t:"离开",a:function(){G.log("离去");}}]},
             {d:"废弃矿脉",o:[{t:"挖掘(+50)",a:function(){G.s.ss+=50;}},{t:"深入(-20灵力,+100)",a:function(){if(G.s.sp>=20){G.s.sp-=20;G.s.ss+=100;}}}]},
             {d:"仙草园",o:[{t:"采集(+3药材)",a:function(){G.s.hb+=3;G.log("药材+3");}},{t:"守护兽看守(-15灵力)",a:function(){if(G.s.sp<15)return;G.s.sp-=15;G.s.hp=Math.max(0,G.s.hp-15);G.s.hb+=5;if(G.s.hp<=0)G.hpDeath();}}]},
             {d:"野外宝箱",o:[{t:"打开",a:function(){var s=G.rng(30,80);G.s.ss+=s;G.log("灵石+"+s);}},{t:"可能有陷阱,放弃",a:function(){G.log("谨慎离开");}}]},
-            {d:"迷雾幻阵",o:[{t:"闯阵(+60,+50)",a:function(){G.s.cv=Math.min(G.s.cv+60,G.maxCv());G.s.ss+=50;G.s.sp=Math.max(0,G.s.sp-20);}},{t:"绕路",a:function(){G.log("绕路");}}]}
+            {d:"迷雾幻阵",o:[{t:"闯阵(+10,+30)",a:function(){G.s.cv=Math.min(G.s.cv+10,G.maxCv());G.s.ss+=30;G.s.sp=Math.max(0,G.s.sp-20);}},{t:"绕路",a:function(){G.log("绕路");}}]}
         ],
         st:[
             {d:"宗门大比",o:[{t:"参加(-15灵力)",a:function(){if(G.s.sp<15)return;G.s.sp-=15;if(G.ch(0.6)){G.s.ctr+=5;G.s.ss+=20;G.log("大比获胜");}else{G.s.sp-=10;G.log("落败");}}},{t:"观战",a:function(){G.s.ctr+=1;G.log("观战+1贡献");}}]},
-            {d:"长老授课",o:[{t:"听讲(+40)",a:function(){G.s.cv=Math.min(G.s.cv+40,G.maxCv());G.log("聆听教诲");}},{t:"提问(+60,-10灵石)",a:function(){if(G.s.ss<10)return;G.s.ss-=10;G.s.cv=Math.min(G.s.cv+60,G.maxCv());}}]}
+            {d:"长老授课",o:[{t:"听讲(+6)",a:function(){G.s.cv=Math.min(G.s.cv+6,G.maxCv());G.log("聆听教诲");}},{t:"提问(+10,-10灵石)",a:function(){if(G.s.ss<10)return;G.s.ss-=10;G.s.cv=Math.min(G.s.cv+10,G.maxCv());}}]}
         ],
         sc:[
-            {d:"古老祭坛",o:[{t:"献祭(-30灵石,+120)",a:function(){if(G.s.ss>=30){G.s.ss-=30;G.s.cv=Math.min(G.s.cv+120,G.maxCv());}}},{t:"摧毁(+60)",a:function(){G.s.ss+=60;}}]},
+            {d:"古老祭坛",o:[{t:"献祭(-30灵石,+18)",a:function(){if(G.s.ss>=30){G.s.ss-=30;G.s.cv=Math.min(G.s.cv+18,G.maxCv());}}},{t:"摧毁(+60)",a:function(){G.s.ss+=60;}}]},
             {d:"天机图",o:[{t:"参悟(+5%突破率)",a:function(){G.s.bbrb=Math.min(100,G.s.bbrb+5);}},{t:"出售(+80)",a:function(){G.s.ss+=80;}}]},
             {d:"守护兽",o:[{t:"战斗(-15灵力)",a:function(){if(G.s.sp<15)return;G.s.sp-=15;G.s.hp=Math.max(0,G.s.hp-25);if(G.ch(0.5))G.s.ss+=60;if(G.s.hp<=0)G.hpDeath();}},{t:"逃跑",a:function(){G.rma(4);G.log("逃跑,寿限-4");}}]},
-            {d:"仙人遗迹",o:[{t:"探索(+150,寿限-5)",a:function(){G.s.cv=Math.min(G.s.cv+150,G.maxCv());G.rma(5);G.log("探索遗迹");}},{t:"记录后离开(+30)",a:function(){G.s.cv=Math.min(G.s.cv+30,G.maxCv());}}]},
+            {d:"仙人遗迹",o:[{t:"探索(+20,寿限-5)",a:function(){G.s.cv=Math.min(G.s.cv+20,G.maxCv());G.rma(5);G.log("探索遗迹");}},{t:"记录后离开(+6)",a:function(){G.s.cv=Math.min(G.s.cv+6,G.maxCv());}}]},
             {d:"天材地宝",o:[{t:"摘取(+5药材,+100灵石)",a:function(){G.s.hb+=5;G.s.ss+=100;}},{t:"守护(+80灵石)",a:function(){G.s.ss+=80;}}]}
         ]
     },
@@ -596,14 +654,14 @@ var G = {
         this.s.cv-=n;
         var ok=this.ch(this.brRate()/100);
         this.s.bbrb=0;
+        // 展示渡劫动画
+        this._showTrib(ok);
         if(ok){
             this.s.r++;this.s.sr=0;
             this.s.bpu=0;this.s.gu=0;this.s.agr=0;
             if(this.s.r===6) this.s.ftl=1000;
             this.s.bbr=5+this.rng(1,15);
             this.recalc();this.s.hp=this.s.mhp;
-            this.log("渡劫成功！踏入"+this.REALMS[this.s.r].name+"·前期");
-            var gc=document.getElementById('gc');gc.classList.add('bt-glow');setTimeout(function(){gc.classList.remove('bt-glow');},1500);
             this.s.cv=Math.floor(this.s.cv*0.1);
             this.s.sp=this.s.msp;
             this.genMons();
@@ -617,9 +675,43 @@ var G = {
         }else{
             this.rma(10);this.s.sp=Math.floor(this.s.sp*0.5);
             this.s.cv=Math.floor(this.s.cv*0.4);this.s.hp=Math.floor(this.s.hp*0.5);
-            this.log("渡劫失败！寿元-10");
         }
         this.cy(0.8);this.checkAch();this.refresh();
+    },
+    _showTrib: function(ok){
+        var ov=document.getElementById('tribOverlay');
+        if(!ov){return;}
+        var rn=this.REALMS[this.s.r].name;
+        var html='<div class="trib-cloud"></div>';
+        // 3道闪电
+        for(var i=0;i<3;i++){
+            html+='<div class="trib-bolt" style="animation-delay:'+(i*0.12)+'s;left:'+(42+i*8)+'%;"></div>';
+        }
+        if(ok){
+            // 金光爆发 + 粒子环 + 飞升碎片
+            html+='<div class="trib-burst"></div>';
+            html+='<div class="trib-ring" style="animation-delay:0.3s;"></div>';
+            html+='<div class="trib-ring" style="animation-delay:0.5s;"></div>';
+            html+='<div class="trib-ring" style="animation-delay:0.7s;"></div>';
+            for(var j=0;j<24;j++){
+                var x=Math.random()*100,y=Math.random()*100;
+                var dl=0.3+Math.random()*0.8;
+                html+='<div class="trib-spark" style="left:'+x+'%;top:'+y+'%;animation:tribSpark '+dl+'s ease-out '+dl+'s both;"></div>';
+            }
+            html+='<div class="trib-text success" style="margin-top:15vh;">⚡ 渡劫成功 ⚡</div>';
+            html+='<div class="trib-sub">踏入 '+rn+' · 前期</div>';
+        }else{
+            html+='<div class="trib-bolt" style="background:linear-gradient(to bottom,transparent,#ff4040,#ff8060,#ff4040,transparent);box-shadow:0 0 20px #ff4040,0 0 40px #cc0000;animation-delay:0.4s;"></div>';
+            html+='<div class="trib-text fail" style="margin-top:15vh;">💥 渡劫失败 💥</div>';
+            html+='<div class="trib-sub">寿元 -10 年</div>';
+        }
+        ov.innerHTML=html;
+        ov.classList.add('show');
+        var self=this;
+        setTimeout(function(){
+            ov.classList.remove('show');
+            ov.innerHTML='';
+        },ok?2500:2000);
     },
     meditate: function(){
         if(this.chkEv()) return;
@@ -817,7 +909,7 @@ var G = {
         var r=Math.random();
         if(r<0.2){this.triggerEv('sc');return;}
         else if(r<0.4){this.s.ss+=40+this.s.r*15;this.log("秘境灵石+"+(40+this.s.r*15));}
-        else if(r<0.6){this.s.cv=Math.min(this.s.cv+25+this.s.r*10,this.maxCv());this.log("秘境悟道");}
+        else if(r<0.6){this.s.cv=Math.min(this.s.cv+8+this.s.r*3,this.maxCv());this.log("秘境悟道");}
         else if(r<0.75){var e=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];this.addEq({t:e.t,name:e.name,atk:e.atk||0,def:e.def||0,hp:e.hp||0});}
         else if(r<0.9){this.s.hb+=3;this.log("药材+3");}
         else{this.s.hp=Math.max(0,this.s.hp-35);this.rma(5);this.log("秘境遇险");if(this.s.hp<=0) this.hpDeath();}
@@ -1052,7 +1144,33 @@ var G = {
     },
 
     // ===== 保存/加载 =====
-    save: function(){try{localStorage.setItem(this.SAVE_KEY,JSON.stringify(this.s));}catch(e){};this.refresh();},
+    save: function(sil){
+        try{
+            localStorage.setItem(this.SAVE_KEY,JSON.stringify(this.s));
+            if(!sil){this._toast('已保存');}
+        }catch(e){
+            console.warn('保存失败:',e);
+            this._toast('保存失败：'+(e.message||'存储空间不足'));
+        }
+        this.refresh();
+    },
+    _toast: function(msg){
+        var t=document.getElementById('toast');
+        if(!t){return;}
+        t.textContent=msg;
+        t.classList.add('show');
+        clearTimeout(this._toastTm);
+        var self=this;
+        this._toastTm=setTimeout(function(){t.classList.remove('show');},1500);
+    },
+    _autosave: null,
+    startAutosave: function(){
+        if(this._autosave){return;}
+        var self=this;
+        this._autosave=setInterval(function(){self.save(true);},30000);
+        window.addEventListener('beforeunload',function(){self.save(true);});
+        document.addEventListener('visibilitychange',function(){if(document.hidden){self.save(true);}});
+    },
     load: function(){
         try{
             var raw=localStorage.getItem(this.SAVE_KEY);
@@ -1452,6 +1570,7 @@ var G = {
                 this.switchScene('cave');
                 this.checkDaily();
             }
+            this.startAutosave();
         }catch(e){
             console.error("初始化失败:",e);
             try{localStorage.removeItem(this.SAVE_KEY);}catch(x){}
