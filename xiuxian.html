@@ -118,10 +118,10 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 .npc-portrait{
     width:100%;border-radius:0.7rem;margin:0.2rem 0;border:1px solid rgba(200,170,100,0.4);
     box-shadow:0 0 15px rgba(200,160,80,0.15);
-    position:relative;overflow:hidden;
+    position:relative;overflow:hidden;flex-shrink:0;
 }
 .npc-img{
-    width:100%;height:auto;display:block;border-radius:0.7rem;
+    width:100%;height:auto;display:block;border-radius:0.7rem;flex-shrink:0;
 }
 .npc-portrait::after{
     content:'';position:absolute;bottom:0;left:0;right:0;height:25%;
@@ -1196,7 +1196,7 @@ var G = {
             if(!Array.isArray(this.s.eq.rg)) this.s.eq.rg=[];
             if(!this.s.es||typeof this.s.es!=='object') this.s.es={hf:0,ar:0,sa:0,tr:0};
             if(typeof this.s.achs!=='object') this.s.achs={};
-            if(!ROOTS[this.s.rt]) this.s.rt='five';
+            if(!this.ROOTS[this.s.rt]) this.s.rt='five';
             if(!Array.isArray(this.s.inv)) this.s.inv=[];
             if(typeof this.s.hhc!=='number') this.s.hhc=0;
             if(typeof this.s.shld!=='number') this.s.shld=0;
