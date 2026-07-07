@@ -77,7 +77,6 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 .ach-card.locked{opacity:0.5;}
 
 /* ===== 场景氛围背景（含CG图片） ===== */
-.imgBase{overflow:hidden;position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
 .scene-portrait{
     width:100%;height:110px;border-radius:0.6rem;
     border:1px solid rgba(200,170,100,0.3);
@@ -117,20 +116,31 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 /* NPC立绘卡片 */
 .npc-portrait{
     width:100%;height:160px;border-radius:0.7rem;background-size:cover;
-    background-position:center 20%;margin:0.2rem 0;border:1px solid rgba(200,170,100,0.4);
+    background-position:center 15%;margin:0.2rem 0;border:1px solid rgba(200,170,100,0.4);
     box-shadow:0 0 15px rgba(200,160,80,0.15);
-    position:relative;overflow:hidden;
+    position:relative;overflow:hidden;min-height:120px;
 }
 .npc-portrait::after{
     content:'';position:absolute;bottom:0;left:0;right:0;height:40%;
     background:linear-gradient(to top,rgba(20,18,35,0.6),transparent);
     pointer-events:none;
 }
+/* 移动端立绘适配 */
+@media(max-width:380px){
+    .npc-portrait{height:130px;background-position:center 10%;}
+    .scene-portrait{height:90px;}
+    .boss-img{height:100px;}
+    .avatar-box{width:38px;height:38px;}
+    .partner-box{width:46px;height:46px;}
+}
 .npc-sect-portrait{background-image:url('game-assets/npc-sect.webp');}
 .npc-estate-portrait{background-image:url('game-assets/npc-estate.webp');}
 .npc-market-portrait{background-image:url('game-assets/npc-market.webp');}
 .npc-secret-portrait{background-image:url('game-assets/npc-secret.webp');}
 .npc-arena-portrait{background-image:url('game-assets/npc-arena.webp');}
+.npc-cave-portrait{background-image:url('game-assets/npc-cave.webp');}
+.npc-wild-portrait{background-image:url('game-assets/npc-wild.webp');}
+.npc-dungeon-portrait{background-image:url('game-assets/npc-dungeon.webp');}
 .npc-label{
     position:absolute;bottom:0.3rem;left:0.5rem;z-index:1;font-size:0.7rem;
     color:#ffe8a0;text-shadow:0 0 8px rgba(0,0,0,0.7);
@@ -141,17 +151,6 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
     background-image:url('game-assets/partner.webp');
     background-size:cover;background-position:center;flex-shrink:0;
     box-shadow:0 0 12px rgba(220,150,180,0.4);
-}
-/* 装饰粒子 */
-.particles{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
-.particle{
-    position:absolute;width:3px;height:3px;border-radius:50%;
-    animation:particleFloat linear infinite;
-}
-@keyframes particleFloat{
-    0%{transform:translateY(0) translateX(0);opacity:0;}
-    10%{opacity:1;}90%{opacity:1;}
-    100%{transform:translateY(-60px) translateX(20px);opacity:0;}
 }
 /* 场景标题装饰 */
 .scene-header-bar{
@@ -165,7 +164,7 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 <div class="header" id="realm">炼气期·前期</div>
 <div class="pname" id="pname">无名修士</div>
 <div class="stats" id="stats"></div>
-<div class="scene-portrait scene-cave" id="scenePortrait"><div class="sp-inner">🏔️ 洞府修炼</div><div class="particles" id="particles"></div></div>
+<div class="scene-portrait scene-cave" id="scenePortrait"><div class="sp-inner">🏔️ 洞府修炼</div></div>
 <div class="scene-b">
     <button class="scn active" onclick="G.switchScene('cave')">洞府</button>
     <button class="scn" onclick="G.switchScene('estate')">仙府</button>
@@ -719,7 +718,7 @@ var G = {
         if(this.s.sp<3){this.log("灵力不足");return;}
         this.s.sp-=3; this._tickSkillCDs(); this._tickCooldowns();
         var dmg=Math.floor(this.s.ba*(0.9+Math.random()*0.5));
-        if(this.s.pet) dmg+=Math.floor((this.s.pet.evo?this.s.pet.evoAtk:this.s.pet.atk)*0.5);
+        if(this.s.pet) dmg+=Math.floor((this.s.pet.evo?this.s.pet.evoAtk:this.s.pet.atk)*1.0);
         var t=this.s.mons[Math.floor(Math.random()*this.s.mons.length)];
         t.hp-=dmg;this.log("攻击"+t.name+"，"+dmg+"伤害");
         if(t.hp<=0){
@@ -758,6 +757,8 @@ var G = {
             if(a.slowed>0){ed=Math.floor(ed*0.6);a.slowed--;}
             if(this.s.shld>0){ed=Math.floor(ed*0.5);this.s.shld--;}
             if(a.poisoned>0){a.hp-=Math.floor(this.s.ba*0.15);a.poisoned--;}
+            // 灵宠护主：防御值减少伤害
+            if(this.s.pet) ed=Math.max(1,ed-(this.s.pet.evo?this.s.pet.evoDef:this.s.pet.def)*1.5);
             ed=Math.max(1,ed-this.s.df);
             this.s.hp=Math.max(0,this.s.hp-ed);
             if(this.s.hp<=0) this.hpDeath();
@@ -805,7 +806,7 @@ var G = {
         this.s.sp-=5;
         if(this.ch(0.7)){this.s.hb+=1+this.rng(0,1);this.log("采集到药材");}
         else this.log("什么都没找到");
-        this.cy(0.2);this.refresh();
+        this.rma(0.5);this.cy(0.2);this.refresh();
     },
 
     // ===== 秘境 =====
@@ -852,12 +853,18 @@ var G = {
         var f=this.s.es.hf||0;if(f<=0){this.log("需建造灵田");return;}
         if(this.s.hhc>0){this.log("灵田需休养"+this.s.hhc+"次行动");return;}
         var c=f*2+this.rng(0,f);this.s.hb+=c;this.s.hhc=3+f; // 冷却：基础3次 + 等级
-        this.log("收获药材+"+c+" (冷却"+this.s.hhc+"次)");
+        this.rma(2+this.s.r*0.5); // 丰收消耗寿元
+        this.log("收获药材+"+c+" (冷却"+this.s.hhc+"次,寿元-"+(2+Math.floor(this.s.r*0.5))+")");
         this.refresh();
     },
     // 每次行动减少冷却
     _tickCooldowns: function(){
         if(this.s.hhc>0) this.s.hhc--;
+        // 灵宠每回合回血 (进化后双倍)
+        if(this.s.pet&&this.s.hp>0&&this.s.hp<this.s.mhp){
+            var regen=this.s.pet.evo?Math.floor(this.s.mhp*0.03):Math.floor(this.s.mhp*0.015);
+            this.s.hp=Math.min(this.s.mhp,this.s.hp+regen);
+        }
     },
 
     // ===== 坊市 =====
@@ -907,15 +914,24 @@ var G = {
         var isB=s.dmons.length===0;
         var t=isB?s.dboss:s.dmons[0];
         var dmg=Math.floor(s.ba*(0.85+Math.random()*0.6));
-        if(s.pet) dmg+=Math.floor((s.pet.evo?s.pet.evoAtk:s.pet.atk)*0.6);
+        if(s.pet) dmg+=Math.floor((s.pet.evo?s.pet.evoAtk:s.pet.atk)*1.0);
         dmg=Math.max(1,dmg-Math.floor(t.atk*0.1));
         t.hp-=dmg;this.log("副本战：对"+t.name+"造成"+dmg+"伤害");
         if(t.hp<=0){
             s.ss+=t.rwd;this.log("击败"+t.name+"！灵石+"+t.rwd);
             if(isB){
-                s.dc=(s.dc||0)+1;this.checkAch();
-                if(this.ch(0.3)){var e=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];var item={t:e.t,name:e.name,atk:e.atk||0,def:e.def||0,hp:e.hp||0};s.inv.push(item);this.log("获得"+e.name+"，已放入背包");}
-                this.log(this.DUNGEONS[s.di].name+"通关！");
+                s.dc=(s.dc||0)+1;
+                var bRwd=this.DUNGEONS[s.di].rwd*2+s.r*50;
+                var extra='灵石+'+bRwd;
+                var eq=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];
+                var item={t:eq.t,name:eq.name,atk:eq.atk||0,def:eq.def||0,hp:eq.hp||0};
+                s.inv.push(item);extra+=', '+eq.name;
+                s.hb+=2+this.rng(0,3);extra+=',药材+'+(2+this.rng(0,3));
+                s.bbrb=Math.min(100,s.bbrb+3);extra+=',突破率+3%';
+                s.lfb=(s.lfb||0)+2;extra+=',寿元上限+2';
+                s.ss+=bRwd;
+                this.log(this.DUNGEONS[s.di].name+"通关！获得："+extra);
+                this.recalc();this.checkAch();
                 s.dboss=null;s.di=-1;
                 this.recalc();this.refresh();
                 return;
@@ -945,9 +961,18 @@ var G = {
         if(t.hp<=0){
             s.ss+=t.rwd;this.log("击败"+t.name+"！灵石+"+t.rwd);
             if(isB){
-                s.dc=(s.dc||0)+1;this.checkAch();
-                if(this.ch(0.3)){var e=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];var item={t:e.t,name:e.name,atk:e.atk||0,def:e.def||0,hp:e.hp||0};s.inv.push(item);this.log("获得"+e.name+"，已放入背包");}
-                this.log(this.DUNGEONS[s.di].name+"通关！");
+                s.dc=(s.dc||0)+1;
+                var bRwd=this.DUNGEONS[s.di].rwd*2+s.r*50;
+                var extra='灵石+'+bRwd;
+                var eq=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];
+                var item={t:eq.t,name:eq.name,atk:eq.atk||0,def:eq.def||0,hp:eq.hp||0};
+                s.inv.push(item);extra+=', '+eq.name;
+                s.hb+=2+this.rng(0,3);extra+=',药材+'+(2+this.rng(0,3));
+                s.bbrb=Math.min(100,s.bbrb+3);extra+=',突破率+3%';
+                s.lfb=(s.lfb||0)+2;extra+=',寿元上限+2';
+                s.ss+=bRwd;
+                this.log(this.DUNGEONS[s.di].name+"通关！获得："+extra);
+                this.recalc();this.checkAch();
                 s.dboss=null;s.di=-1;
                 this.recalc();this.refresh();
                 return;
@@ -984,6 +1009,7 @@ var G = {
         this.s.sp-=5; this._tickSkillCDs(); this._tickCooldowns();
         var op=this.s.aopp;
         var dmg=Math.floor(this.s.ba*(0.8+Math.random()*0.7));
+        if(this.s.pet) dmg+=Math.floor((this.s.pet.evo?this.s.pet.evoAtk:this.s.pet.atk)*0.8);
         dmg=Math.max(1,dmg-op.df);
         op.hp-=dmg;this.log("对"+op.name+"造成"+dmg+"伤害");
         if(op.hp<=0){
@@ -994,6 +1020,7 @@ var G = {
         }else{
             var ed=Math.floor(op.atk*(0.6+Math.random()*0.6));
             if(this.s.shld>0){ed=Math.floor(ed*0.5);this.s.shld--;}
+            if(this.s.pet) ed=Math.max(1,ed-(this.s.pet.evo?this.s.pet.evoDef:this.s.pet.def)*1.5);
             ed=Math.max(1,ed-this.s.df);
             this.s.hp=Math.max(0,this.s.hp-ed);
             this.log(op.name+"反击，造成"+ed+"伤害");
@@ -1015,6 +1042,7 @@ var G = {
             var op=this.s.aopp;
             var ed=Math.floor(op.atk*(0.6+Math.random()*0.6));
             if(this.s.shld>0){ed=Math.floor(ed*0.5);this.s.shld--;}
+            if(this.s.pet) ed=Math.max(1,ed-(this.s.pet.evo?this.s.pet.evoDef:this.s.pet.def)*1.5);
             ed=Math.max(1,ed-this.s.df);
             this.s.hp=Math.max(0,this.s.hp-ed);
             this.log(op.name+"反击，造成"+ed+"伤害");
@@ -1106,8 +1134,6 @@ var G = {
         var icons={cave:'🏔️ 洞府修炼',estate:'🏡 仙府洞天',sect:'🏯 宗门问道',wild:'🌲 荒郊野外',market:'🏪 坊市交易',dungeon:'💀 副本探险',secret:'✨ 秘境寻宝',arena:'⚔️ 竞技斗法'};
         var si=sp?sp.querySelector('.sp-inner'):null;
         if(si) si.textContent=icons[sc]||sc;
-        // 生成粒子
-        this._genParticles(sc);
         document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('active');});
         var btns=document.querySelectorAll('.scn');
         btns.forEach(function(b){if(b.textContent.indexOf(this._scTxt(sc))>=0) b.classList.add('active');},this);
@@ -1115,24 +1141,6 @@ var G = {
         var map={cave:'Cave',estate:'Estate',sect:'Sect',wild:'Wild',market:'Market',dungeon:'Dungeon',secret:'Secret',arena:'Arena'};
         var pnl=document.getElementById('pnl'+map[sc]);if(pnl) pnl.classList.add('active');
         this.render(sc);
-    },
-    _genParticles: function(sc){
-        var pc=document.getElementById('particles');if(!pc) return;
-        pc.innerHTML='';
-        var colors={cave:['#ffd78b','#d4af37','#f9e076','#c9a84c'],estate:['#80d080','#60a060','#a0e0a0','#70b870'],
-            sect:['#b0a0d0','#9080c0','#c0b0e0','#a090d0'],wild:['#80c060','#60a040','#a0d080','#70b050'],
-            market:['#e0b060','#c09040','#f0c080','#d0a050'],dungeon:['#e04040','#c02020','#f06060','#d03030'],
-            secret:['#a080e0','#8060c0','#c0a0f0','#9070d0'],arena:['#e08040','#c06020','#f0a060','#d07030']};
-        var cols=colors[sc]||colors.cave;
-        for(var i=0;i<18;i++){
-            var d=document.createElement('div');d.className='particle';
-            d.style.cssText='left:'+Math.random()*100+'%;top:'+(50+Math.random()*50)+'%;'+
-                'background:'+cols[Math.floor(Math.random()*cols.length)]+';'+
-                'width:'+(2+Math.random()*3)+'px;height:'+(2+Math.random()*3)+'px;'+
-                'animation-duration:'+(3+Math.random()*5)+'s;'+
-                'animation-delay:'+(Math.random()*4)+'s;';
-            pc.appendChild(d);
-        }
     },
     _scTxt: function(sc){
         var m={cave:'洞府',estate:'仙府',sect:'宗门',wild:'野外',market:'坊市',dungeon:'副本',secret:'秘境',arena:'竞技'};
@@ -1163,7 +1171,8 @@ var G = {
     _renderPn: function(sc){
         switch(sc){
         case 'cave':
-            var h=this._charHeader();
+            var h='<div class="npc-portrait npc-cave-portrait"><div class="npc-label">洞府仙灵 · 清漪仙子</div></div>';
+            h+=this._charHeader();
             h+='<div style="display:flex;flex-wrap:wrap;gap:0.3rem;justify-content:center;">';
             h+='<button class="btn pr" onclick="G.cultivate();G.save();">修炼</button>';
             h+='<button class="btn" onclick="G.subBreak();G.save();">小境界</button>';
@@ -1209,7 +1218,8 @@ var G = {
             break;
         case 'wild':
             var mns=this.s.mons.map(function(m){return m.name+'(HP:'+m.hp+')';}).join(', ')||'无';
-            h=this._charHeader()+'<div class="card"><div><div>'+mns+'</div><div style="font-size:0.65rem;">总灵石+'+this.s.mrw+'</div></div><button class="btn dg" onclick="G.attackMon();G.save();">攻击(-3)</button></div>';
+            h='<div class="npc-portrait npc-wild-portrait"><div class="npc-label">林间猎手 · 青鸾</div></div>';
+            h+=this._charHeader()+'<div class="card"><div><div>'+mns+'</div><div style="font-size:0.65rem;">总灵石+'+this.s.mrw+'</div></div><button class="btn dg" onclick="G.attackMon();G.save();">攻击(-3)</button></div>';
             // Skill buttons for combat
             if(this.s.skls.length>0){
                 h+='<div class="skill-bar">';
@@ -1264,7 +1274,7 @@ var G = {
     _renderDg: function(){
         var p=document.getElementById('pnlDungeon'), s=this.s;
         if(s.di<0){
-            p.innerHTML='<div style="text-align:center;font-size:0.8rem;">选择副本挑战</div>';
+            p.innerHTML='<div class="npc-portrait npc-dungeon-portrait"><div class="npc-label">魔道女帝 · 暗月</div></div><div style="text-align:center;font-size:0.8rem;">选择副本挑战</div>';
             var self=this;
             this.DUNGEONS.forEach(function(d,i){
                 var locked=s.r<d.realmReq;
@@ -1441,7 +1451,6 @@ var G = {
                 this.refresh();
                 this.switchScene('cave');
                 this.checkDaily();
-                this._genParticles('cave');
             }
         }catch(e){
             console.error("初始化失败:",e);
