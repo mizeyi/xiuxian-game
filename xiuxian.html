@@ -246,6 +246,7 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
     <button class="btn bs" onclick="G.showAch()">成就</button>
     <button class="btn bs" onclick="G.showDaily()">日常</button>
     <button class="btn bs" onclick="G.save()">保存</button>
+    <button class="btn bs" onclick="G.manualLoad()">读档</button>
     <button class="btn bs dg" onclick="G.resetGame()">重修</button>
 </div>
 </div>
@@ -1201,6 +1202,19 @@ var G = {
             if(this.s.hp>this.s.mhp) this.s.hp=this.s.mhp;
             return true;
         }catch(e){console.warn("存档加载失败:",e);localStorage.removeItem(this.SAVE_KEY);this.startNew();return false;}
+    },
+    manualLoad: function(){
+        var raw=localStorage.getItem(this.SAVE_KEY);
+        if(!raw){this._toast('无存档');return;}
+        if(!confirm('读取存档将覆盖当前进度，确定？')) return;
+        if(this.load()){
+            this._toast('读档成功');
+            this.log('读取存档成功');
+            this.refresh();
+            this.switchScene(this.s.sc||'cave');
+        }else{
+            this._toast('读档失败');
+        }
     },
     resetGame: function(sil){
         if(!sil&&!confirm('确定重修？')) return;
