@@ -248,7 +248,7 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 <div style="display:flex;justify-content:space-between;flex-shrink:0;gap:0.3rem;">
     <button class="btn bs" onclick="G.showAch()">成就</button>
     <button class="btn bs" onclick="G.showDaily()">日常</button>
-    <button class="btn bs" onclick="G.save()">保存</button>
+    <button class="btn bs" onclick="G.manualSave()">保存</button>
     <button class="btn bs" onclick="G.manualLoad()">读档</button>
     <button class="btn bs dg" onclick="G.resetGame()">重修</button>
 </div>
@@ -260,6 +260,7 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 <script>
 var G = {
     SAVE_KEY: 'xiuxian_v23',
+    MANUAL_KEY: 'xiuxian_v23_manual',
     
     REALMS: [
         {name:"炼气期",atkMul:2,spiritMax:100,lifeBonus:20,hpBase:80,subCost:[60,100]},
@@ -1160,6 +1161,17 @@ var G = {
         }
         this.refresh();
     },
+    manualSave: function(){
+        try{
+            localStorage.setItem(this.SAVE_KEY,JSON.stringify(this.s));
+            localStorage.setItem(this.MANUAL_KEY,JSON.stringify(this.s));
+            this._toast('已保存（可读档回退）');
+        }catch(e){
+            console.warn('手动保存失败:',e);
+            this._toast('保存失败：'+(e.message||'存储空间不足'));
+        }
+        this.refresh();
+    },
     _toast: function(msg){
         var t=document.getElementById('toast');
         if(!t){return;}
@@ -1207,21 +1219,43 @@ var G = {
         }catch(e){console.warn("存档加载失败:",e);localStorage.removeItem(this.SAVE_KEY);this.startNew();return false;}
     },
     manualLoad: function(){
-        var raw=localStorage.getItem(this.SAVE_KEY);
+        var raw=localStorage.getItem(this.MANUAL_KEY);
         if(!raw){this._toast('无存档');return;}
         if(!confirm('读取存档将覆盖当前进度，确定？')) return;
-        if(this.load()){
+        try{
+            var ld=JSON.parse(raw);
+            if(!ld||typeof ld!=='object'){this._toast('存档损坏');return;}
+            var def=this.defState();
+            for(var k in def){if(ld.hasOwnProperty(k))this.s[k]=ld[k];else this.s[k]=def[k];}
+            var nf=['r','sr','cv','sp','msp','hp','mhp','ba','df','ss','ag','mag','mrw','dflr','dc','di','bbr','bbrb','bpu','gu','ctr','hb','aw','ark','mk','ac','lfb','agr','ftl'];
+            var self=this;
+            nf.forEach(function(f){if(typeof self.s[f]!=='number'||!isFinite(self.s[f]))self.s[f]=def[f];});
+            if(!Array.isArray(this.s.mons)||!this.s.mons.length) this.genMons();
+            if(!Array.isArray(this.s.skls)) this.s.skls=[];
+            if(typeof this.s.scds!=='object') this.s.scds={};
+            if(!this.s.eq||typeof this.s.eq!=='object') this.s.eq={wp:null,ar:null,rg:[]};
+            if(!Array.isArray(this.s.eq.rg)) this.s.eq.rg=[];
+            if(!this.s.es||typeof this.s.es!=='object') this.s.es={hf:0,ar:0,sa:0,tr:0};
+            if(typeof this.s.achs!=='object') this.s.achs={};
+            if(!this.ROOTS[this.s.rt]) this.s.rt='five';
+            if(!Array.isArray(this.s.inv)) this.s.inv=[];
+            if(typeof this.s.hhc!=='number') this.s.hhc=0;
+            if(typeof this.s.shld!=='number') this.s.shld=0;
+            this.recalc();
+            if(!isFinite(this.s.hp)||this.s.hp<=0) this.s.hp=this.s.mhp;
+            if(this.s.hp>this.s.mhp) this.s.hp=this.s.mhp;
             this._toast('读档成功');
             this.log('读取存档成功');
             this.refresh();
             this.switchScene(this.s.sc||'cave');
-        }else{
-            this._toast('读档失败');
+        }catch(e){
+            console.warn("手动读档失败:",e);
+            this._toast('读档失败：'+(e.message||'存档损坏'));
         }
     },
     resetGame: function(sil){
         if(!sil&&!confirm('确定重修？')) return;
-        try{localStorage.removeItem(this.SAVE_KEY);}catch(e){}
+        try{localStorage.removeItem(this.SAVE_KEY);localStorage.removeItem(this.MANUAL_KEY);}catch(e){}
         this.s=this.defState();
         this.s.rt=Object.keys(this.ROOTS)[Math.floor(Math.random()*5)];
         this.s.bbr=5+this.rng(1,15);
@@ -1308,8 +1342,7 @@ var G = {
     _renderPn: function(sc){
         switch(sc){
         case 'cave':
-            var h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-cave.webp"><div class="npc-label">洞府仙灵 · 清漪仙子</div></div>';
-            h+=this._charHeader();
+            var h=this._charHeader();
             h+='<div style="display:flex;flex-wrap:wrap;gap:0.3rem;justify-content:center;">';
             h+='<button class="btn pr" onclick="G.cultivate();G.save();">修炼</button>';
             h+='<button class="btn" onclick="G.subBreak();G.save();">小境界</button>';
@@ -1330,7 +1363,7 @@ var G = {
             document.getElementById('pnlCave').innerHTML=h;
             break;
         case 'estate':
-            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-estate.webp"><div class="npc-label">仙府丹师 · 碧瑶仙子</div></div>';
+            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-estate.webp"></div>';
             h+='<div style="font-size:0.8rem;color:#b7a17c;">仙府建造（提升永久属性）</div>';
             h+='<div class="build-card"><span>灵田 Lv.'+(this.s.es.hf||0)+' (自动产药)</span><div><button class="btn bs" onclick="G.harvHerb();G.save();">收获</button><button class="btn bs'+(this.s.es.hf>=4?'" disabled':'"')+' onclick="G.upgEs(\'hf\');G.save();">升级('+([100,250,500,1000][this.s.es.hf||0]||'满')+')</button></div></div>';
             h+='<div class="build-card"><span>丹房 Lv.'+(this.s.es.ar||0)+' (提升炼丹)</span><button class="btn bs" onclick="G.upgEs(\'ar\');G.save();">升级('+([150,350,700,1500][this.s.es.ar||0]||'满')+')</button></div>';
@@ -1339,7 +1372,7 @@ var G = {
             document.getElementById('pnlEstate').innerHTML=h;
             break;
         case 'sect':
-            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-sect.webp"><div class="npc-label">宗门女长老 · 金霞仙子</div></div>';
+            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-sect.webp"></div>';
             h+='<div style="font-size:0.85rem;">'+(this.s.sn?this.s.sn+'弟子':'散修')+'</div>';
             h+='<div style="font-size:0.75rem;">贡献 <span style="color:#ffd78b;">'+this.s.ctr+'</span></div>';
             h+='<div style="display:flex;gap:0.3rem;flex-wrap:wrap;">';
@@ -1355,7 +1388,7 @@ var G = {
             break;
         case 'wild':
             var mns=this.s.mons.map(function(m){return m.name+'(HP:'+m.hp+')';}).join(', ')||'无';
-            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-wild.webp"><div class="npc-label">林间猎手 · 青鸾</div></div>';
+            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-wild.webp"></div>';
             h+=this._charHeader()+'<div class="card"><div><div>'+mns+'</div><div style="font-size:0.65rem;">总灵石+'+this.s.mrw+'</div></div><button class="btn dg" onclick="G.attackMon();G.save();">攻击(-3)</button></div>';
             // Skill buttons for combat
             if(this.s.skls.length>0){
@@ -1374,7 +1407,7 @@ var G = {
             document.getElementById('pnlWild').innerHTML=h;
             break;
         case 'market':
-            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-market.webp"><div class="npc-label">坊市掌柜 · 桃花娘子</div></div>';
+            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-market.webp"></div>';
             h+='<div style="font-size:0.72rem;color:#b7a17c;">消耗品</div><div class="cg">';
             h+='<div class="card"><span>破境丹 <small>('+this.s.bpu+'/3)</small></span><button class="btn bs" onclick="G.buyBp();G.save();">30灵石</button></div>';
             h+='<div class="card"><span>回灵丹</span><button class="btn bs" onclick="G.buySp();G.save();">15灵石</button></div>';
@@ -1399,7 +1432,7 @@ var G = {
             document.getElementById('pnlMarket').innerHTML=h;
             break;
         case 'secret':
-            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-secret.webp"><div class="npc-label">秘境守护者 · 紫月仙子</div></div>';
+            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-secret.webp"></div>';
             h+='<div style="text-align:center;font-size:0.8rem;">秘境·高风险高回报</div>';
             h+='<div class="cg"><button class="btn dg" onclick="G.secExp();G.save();">探索秘境(-20)</button>';
             h+='<button class="btn" onclick="G.secSkill();G.save();">感悟技能(-30)</button></div>';
@@ -1411,7 +1444,7 @@ var G = {
     _renderDg: function(){
         var p=document.getElementById('pnlDungeon'), s=this.s;
         if(s.di<0){
-            p.innerHTML='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-dungeon.webp"><div class="npc-label">魔道女帝 · 暗月</div></div><div style="text-align:center;font-size:0.8rem;">选择副本挑战</div>';
+            p.innerHTML='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-dungeon.webp"></div><div style="text-align:center;font-size:0.8rem;">选择副本挑战</div>';
             var self=this;
             this.DUNGEONS.forEach(function(d,i){
                 var locked=s.r<d.realmReq;
@@ -1453,7 +1486,7 @@ var G = {
     },
     _renderAr: function(){
         var p=document.getElementById('pnlArena'), opp=this.s.aopp;
-        p.innerHTML='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-arena.webp"><div class="npc-label">竞技场主 · 赤霄剑仙</div></div><div style="text-align:center;font-size:0.8rem;">竞技排名：<span style="color:#ffd700;">#'+this.s.ark+'</span> | 胜场：'+(this.s.aw||0)+'</div><div class="card"><div>'+(opp?'对手：'+opp.name+'<br><small>生命 '+opp.hp+' | 攻击 '+opp.atk+' | 防御 '+opp.df+'</small>':'点击挑战寻找对手')+'</div><button class="btn '+(opp?'dg':'pr')+'" onclick="G.arFight();G.save();">'+(opp?'战斗(-5)':'寻找对手(-10)')+'</button></div>';
+        p.innerHTML='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-arena.webp"></div><div style="text-align:center;font-size:0.8rem;">竞技排名：<span style="color:#ffd700;">#'+this.s.ark+'</span> | 胜场：'+(this.s.aw||0)+'</div><div class="card"><div>'+(opp?'对手：'+opp.name+'<br><small>生命 '+opp.hp+' | 攻击 '+opp.atk+' | 防御 '+opp.df+'</small>':'点击挑战寻找对手')+'</div><button class="btn '+(opp?'dg':'pr')+'" onclick="G.arFight();G.save();">'+(opp?'战斗(-5)':'寻找对手(-10)')+'</button></div>';
         // Skill buttons
         if(opp&&this.s.skls.length>0){
             var sh='<div class="skill-bar">';
