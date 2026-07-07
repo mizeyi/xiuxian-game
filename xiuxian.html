@@ -114,21 +114,22 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 .boss-fox{background-image:url('game-assets/boss-fox.webp');}
 .boss-spirit{background-image:url('game-assets/boss-spirit.webp');}
 /* NPC立绘卡片 */
+/* NPC立绘卡片 - aspect-ratio匹配图片2:3比例，完整显示 */
 .npc-portrait{
-    width:100%;height:180px;border-radius:0.7rem;background-size:cover;
+    width:100%;aspect-ratio:2/3;max-height:55vh;border-radius:0.7rem;background-size:cover;
     background-position:center top;margin:0.2rem 0;border:1px solid rgba(200,170,100,0.4);
     box-shadow:0 0 15px rgba(200,160,80,0.15);
-    position:relative;overflow:hidden;min-height:140px;
+    position:relative;overflow:hidden;
 }
 .npc-portrait::after{
-    content:'';position:absolute;bottom:0;left:0;right:0;height:35%;
+    content:'';position:absolute;bottom:0;left:0;right:0;height:30%;
     background:linear-gradient(to top,rgba(20,18,35,0.65),transparent);
     pointer-events:none;
 }
-/* 移动端立绘适配 */
-@media(max-width:380px){
-    .npc-portrait{height:150px;background-position:center top;}
-    .scene-portrait{height:90px;}
+/* 移动端立绘：完整显示全身 */
+@media(max-width:480px){
+    .npc-portrait{max-height:none;aspect-ratio:2/3;background-position:center top;}
+    .scene-portrait{height:80px;}
     .boss-img{height:100px;}
     .avatar-box{width:38px;height:38px;}
     .partner-box{width:46px;height:46px;}
@@ -681,7 +682,7 @@ var G = {
     _showTrib: function(ok){
         var ov=document.getElementById('tribOverlay');
         if(!ov){return;}
-        var rn=this.REALMS[this.s.r].name;
+        var rn=ok?this.REALMS[this.s.r+1].name:this.REALMS[this.s.r].name;
         var html='<div class="trib-cloud"></div>';
         // 3道闪电
         for(var i=0;i<3;i++){
@@ -896,9 +897,9 @@ var G = {
         if(this.chkEv()) return;
         if(this.s.sp<5){this.log("灵力不足");return;}
         this.s.sp-=5;
-        if(this.ch(0.7)){this.s.hb+=1+this.rng(0,1);this.log("采集到药材");}
-        else this.log("什么都没找到");
-        this.rma(0.5);this.cy(0.2);this.refresh();
+        if(this.ch(0.7)){this.s.hb+=1+this.rng(0,1);this.log("采集到药材(耗时0.5年)");}
+        else this.log("什么都没找到(耗时0.5年)");
+        this.cy(0.5);this.refresh();
     },
 
     // ===== 秘境 =====
@@ -945,8 +946,9 @@ var G = {
         var f=this.s.es.hf||0;if(f<=0){this.log("需建造灵田");return;}
         if(this.s.hhc>0){this.log("灵田需休养"+this.s.hhc+"次行动");return;}
         var c=f*2+this.rng(0,f);this.s.hb+=c;this.s.hhc=3+f; // 冷却：基础3次 + 等级
-        this.rma(2+this.s.r*0.5); // 丰收消耗寿元
-        this.log("收获药材+"+c+" (冷却"+this.s.hhc+"次,寿元-"+(2+Math.floor(this.s.r*0.5))+")");
+        var years=2+this.s.r*0.5;
+        if(!this.cy(years)) return; // 丰收消耗时间(增加年龄)
+        this.log("收获药材+"+c+" (冷却"+this.s.hhc+"次,耗时"+years+"年)");
         this.refresh();
     },
     // 每次行动减少冷却
