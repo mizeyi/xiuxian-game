@@ -1245,6 +1245,7 @@ var G = {
             if(t.hp<=0) this.log(t.name+"临死反击造成"+ed+"伤害");
             if(s.hp<=0) this.hpDeath();
         }
+        if(!this.cy(0.3)) return; // 副本每层耗时
         this.recalc();this.refresh();
     },
     dgSkillFight: function(sid){
@@ -1295,6 +1296,7 @@ var G = {
             if(t.hp<=0) this.log(t.name+"临死反击造成"+ed+"伤害");
             if(s.hp<=0) this.hpDeath();
         }
+        if(!this.cy(0.3)) return; // 副本每层耗时
         this.recalc();this.refresh();
     },
     dgQuit: function(){this.s.di=-1;this.s.dmons=[];this.s.dboss=null;this.refresh();this.switchScene('dungeon');},

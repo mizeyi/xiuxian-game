@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>仙途 - 修仙之旅 WeChat分享卡</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:#1a1025;font-family:'SimSun','STSong','serif'}
+.card{width:375px;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(128,80,200,.4),0 0 120px rgba(255,180,50,.15)}
+/* 上半区：仙侠艺术 */
+.art{
+  height:580px;background:linear-gradient(180deg,#0a0618 0%,#1a1035 20%,#2d1a50 40%,#4a2058 55%,#c04830 70%,#f0a040 85%,#ffd080 100%);
+  position:relative;overflow:hidden
+}
+/* 太阳 */
+.sun{position:absolute;top:260px;left:50%;transform:translateX(-50%);width:180px;height:180px;background:radial-gradient(circle,#fff8e0 0%,#ffe0a0 15%,#ffb040 40%,#e07020 70%,transparent 100%);border-radius:50%;box-shadow:0 0 120px rgba(255,180,50,.8)}
+/* 山峦层叠 */
+.mountain{position:absolute;bottom:0;width:100%}
+.mt1{height:220px;background:linear-gradient(180deg,transparent 0%,#1a0a30 8%,#2a1545 25%,#1a0a30 50%,#0d0520 100%);border-radius:50% 50% 0 0 / 25% 25% 0 0;transform:scaleX(1.4)}
+.mt2{height:180px;background:linear-gradient(180deg,transparent 0%,#361850 5%,#1a1035 30%,#0d0520 100%);border-radius:50% 50% 0 0 / 30% 30% 0 0;transform:scaleX(1.2);bottom:-20px}
+.mt3{height:120px;background:linear-gradient(180deg,transparent 0%,#251040 10%,#1a1035 40%,#0a0420 100%);border-radius:50% 50% 0 0 / 35% 35% 0 0;bottom:-30px}
+/* 云雾 */
+.cloud{position:absolute;background:linear-gradient(180deg,rgba(255,240,220,.15) 0%,rgba(255,200,150,.08) 60%,transparent 100%);border-radius:50%}
+.c1{width:200px;height:50px;left:-30px;top:300px}
+.c2{width:260px;height:40px;right:-50px;top:340px}
+.c3{width:180px;height:35px;left:80px;top:360px}
+/* 修士剪影 */
+.cultivator{position:absolute;bottom:100px;left:50%;transform:translateX(-50%);width:60px;height:140px;
+  background:linear-gradient(180deg,rgba(20,10,40,.9) 0%,rgba(40,25,60,.85) 50%,rgba(20,10,40,.9) 100%);
+  clip-path:polygon(50% 0%,65% 8%,70% 15%,75% 20%,80% 35%,85% 55%,90% 65%,85% 75%,70% 70%,65% 60%,60% 75%,55% 85%,50% 100%,45% 85%,40% 75%,35% 60%,30% 70%,15% 75%,10% 65%,15% 55%,20% 35%,25% 20%,30% 15%,35% 8%);
+}
+/* 光环 */
+.aura{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);width:100px;height:100px;border-radius:50%;background:radial-gradient(circle,rgba(255,200,100,.2) 0%,rgba(200,150,255,.1) 40%,transparent 70%);animation:glow 4s ease-in-out infinite}
+@keyframes glow{0%,100%{opacity:.6;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.15)}}
+/* 灵气粒子 */
+.particle{position:absolute;width:3px;height:3px;background:#ffd080;border-radius:50%;box-shadow:0 0 6px #ffa040;animation:float 3s ease-in-out infinite}
+.pa{left:80px;top:340px;animation-delay:0s}
+.pb{left:200px;top:300px;animation-delay:.8s}
+.pc{left:140px;top:370px;animation-delay:1.6s}
+.pd{left:260px;top:350px;animation-delay:2.2s}
+.pe{left:100px;top:280px;animation-delay:.4s}
+@keyframes float{0%,100%{transform:translateY(0);opacity:1}50%{transform:translateY(-20px);opacity:.3}}
+/* 标题 */
+.title-area{position:absolute;top:30px;width:100%;text-align:center;z-index:10}
+.title{
+  font-size:60px;color:transparent;
+  background:linear-gradient(180deg,#ffe8a0 0%,#ffd060 30%,#e0a020 60%,#ffe8a0 80%,#ffd060 100%);
+  -webkit-background-clip:text;background-clip:text;
+  text-shadow:0 0 40px rgba(255,200,100,.6),0 4px 8px rgba(0,0,0,.5);
+  letter-spacing:20px;margin-right:-20px
+}
+.subtitle{font-size:15px;color:#e0c080;letter-spacing:6px;text-shadow:0 0 15px rgba(255,200,100,.4);margin-top:4px}
+/* 下半区：信息区 */
+.info{
+  height:220px;background:linear-gradient(180deg,#0d0520 0%,#120825 30%,#0d0520 100%);
+  padding:20px 24px;color:#e0d0b0;position:relative;border-top:1px solid rgba(255,200,100,.2)
+}
+.info h2{font-size:20px;color:#ffd060;text-align:center;margin-bottom:12px;letter-spacing:3px}
+.features{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px}
+.tag{font-size:12px;padding:5px 12px;background:rgba(255,200,100,.1);border:1px solid rgba(255,200,100,.25);border-radius:20px;color:#ffd080}
+.url-bar{text-align:center;background:rgba(0,0,0,.3);border-radius:10px;padding:12px;border:1px dashed rgba(255,200,100,.15)}
+.url-label{font-size:11px;color:#9980b0;margin-bottom:4px}
+.url{font-size:13px;color:#80d0ff;word-break:break-all;font-family:'Consolas','Courier New',monospace}
+.qr-dot{position:absolute;bottom:15px;right:20px;width:8px;height:8px;background:#ffd060;border-radius:50%;box-shadow:0 0 10px #ffa040}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <!-- 上半区：艺术区 -->
+  <div class="art">
+    <div class="sun"></div>
+    <div class="cloud c1"></div>
+    <div class="cloud c2"></div>
+    <div class="cloud c3"></div>
+
+    <!-- 灵气粒子 -->
+    <div class="particle pa"></div>
+    <div class="particle pb"></div>
+    <div class="particle pc"></div>
+    <div class="particle pd"></div>
+    <div class="particle pe"></div>
+
+    <!-- 修士 -->
+    <div class="aura"></div>
+    <div class="cultivator"></div>
+
+    <!-- 山脉 -->
+    <div class="mountain mt3"></div>
+    <div class="mountain mt2"></div>
+    <div class="mountain mt1"></div>
+
+    <!-- 标题 -->
+    <div class="title-area">
+      <div class="title">仙 途</div>
+      <div class="subtitle">修仙之旅 · 凡人修仙传</div>
+    </div>
+  </div>
+
+  <!-- 下半区：信息区 -->
+  <div class="info">
+    <h2>免费开玩</h2>
+    <div class="features">
+      <span class="tag">修炼渡劫</span>
+      <span class="tag">灵气炼丹</span>
+      <span class="tag">功法传承</span>
+      <span class="tag">副本秘境</span>
+      <span class="tag">竞技对决</span>
+      <span class="tag">道侣双修</span>
+    </div>
+    <div class="url-bar">
+      <div class="url-label">🏮 长按复制链接 → 浏览器打开</div>
+      <div class="url">https://mizeyi.github.io/xiuxian-game/xiuxian.html</div>
+    </div>
+    <div class="qr-dot"></div>
+  </div>
+</div>
+
+</body>
+</html>
