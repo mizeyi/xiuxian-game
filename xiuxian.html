@@ -269,15 +269,24 @@ var G = {
         {name:"大乘秘境",minR:6,cost:180,ss:2500,cv:750},
     ],
     TECHNIQUES: [
-        {id:"basicQi",name:"基础吐纳术",desc:"稳步修炼",cv:0,atk:0,def:0,req:0,cost:0},
-        {id:"greenYuan",name:"青元剑诀",desc:"攻+15%,修+0.3",cv:0.3,atk:1.15,def:0,req:0,cost:200},
-        {id:"daYan",name:"大衍诀",desc:"神识强化,修+0.8",cv:0.8,atk:1.05,def:0.05,req:2,cost:800},
-        {id:"burningArt",name:"焚诀",desc:"攻+30%,修炼略慢",cv:-0.1,atk:1.3,def:0,req:1,cost:400},
-        {id:"iceHeart",name:"冰心诀",desc:"修+0.5,防+10%,抗衰",cv:0.5,atk:0,def:0.1,req:2,cost:600},
-        {id:"swordSutra",name:"诛仙剑经",desc:"攻+40%",cv:0.1,atk:1.4,def:0,req:4,cost:2000},
-        {id:"starBody",name:"星辰炼体术",desc:"防+25%,HP+20%",cv:0.2,atk:0,def:0.25,hpMul:1.2,req:3,cost:1200},
-        {id:"chaosPrim",name:"混沌原始诀",desc:"攻+15%,防+15%,修+1.0",cv:1.0,atk:1.15,def:0.15,req:5,cost:5000},
+        {id:"basicQi",name:"基础吐纳术",tier:"黄",cv:0,atk:0,def:0,dunst:0,ssense:0,req:0,source:"初始"},
+        {id:"greenYuan",name:"青元剑诀",tier:"玄",cv:0.3,atk:1.15,def:0,dunst:0,ssense:0,req:0,source:"副本/云游"},
+        {id:"burningArt",name:"焚诀",tier:"玄",cv:-0.1,atk:1.3,def:0,dunst:0.1,ssense:0,req:1,source:"副本"},
+        {id:"iceHeart",name:"冰心诀",tier:"地",cv:0.5,atk:0,def:0.1,dunst:0,ssense:0.2,req:2,source:"秘境"},
+        {id:"swordSutra",name:"诛仙剑经",tier:"地",cv:0.1,atk:1.4,def:0,dunst:0.2,ssense:0,req:4,source:"副本/竞技"},
+        {id:"starBody",name:"星辰炼体术",tier:"地",cv:0.2,atk:0,def:0.25,hpMul:1.2,dunst:0,ssense:0,req:3,source:"副本"},
+        {id:"daYan",name:"大衍诀",tier:"地",cv:0.6,atk:1.05,def:0.05,dunst:0,ssense:0.3,req:2,source:"秘境"},
+        {id:"voidStep",name:"缩地成寸",tier:"天",cv:0.3,atk:0,def:0.05,dunst:0.4,ssense:0.1,req:4,source:"秘境"},
+        {id:"soulRefine",name:"炼神术",tier:"天",cv:0.3,atk:0.05,def:0,hpMul:1.1,dunst:0,ssense:0.4,req:3,source:"秘境/竞技"},
+        {id:"chaosPrim",name:"混沌原始诀",tier:"天",cv:0.8,atk:1.1,def:0.1,dunst:0.2,ssense:0.2,req:5,source:"秘境/竞技"},
     ],
+    // 功法获取权重（各途径）
+    techPools: {
+        dg:["greenYuan","burningArt","swordSutra","starBody"], // 副本掉落池
+        wd:["greenYuan","burningArt","iceHeart"], // 云游奇遇
+        sc:["iceHeart","daYan","voidStep","soulRefine"], // 秘境
+        ar:["swordSutra","soulRefine","chaosPrim"], // 竞技场
+    },
     PILLS: [
         {id:"baseElix",name:"筑基丹",desc:"突破率+30%",realmLvl:1,rwd:30,cost:150,mat:4},
         {id:"goldElix",name:"结金丹",desc:"突破率+25%",realmLvl:2,rwd:25,cost:350,mat:6},
@@ -314,13 +323,13 @@ var G = {
         {name:"幼年玄龟",atk:1,def:5,hp:60,evoLv:6,evoName:"成年玄龟",evoAtk:5,evoDef:15,evoHp:150}
     ],
     DUNGEONS: [
-        {name:"妖兽巢穴",realmReq:0,fl:3,boss:"妖王",bHp:150,bAtk:25,rwd:80,cost:10},
-        {name:"幽冥洞",realmReq:1,fl:4,boss:"幽冥老祖",bHp:300,bAtk:45,rwd:180,cost:20},
-        {name:"上古战场",realmReq:2,fl:5,boss:"战神残魂",bHp:550,bAtk:80,rwd:350,cost:35},
-        {name:"天魔殿",realmReq:3,fl:6,boss:"混世魔王",bHp:900,bAtk:140,rwd:600,cost:55},
-        {name:"诛仙台",realmReq:4,fl:7,boss:"邪剑仙",bHp:1500,bAtk:240,rwd:1000,cost:80},
-        {name:"万妖塔",realmReq:5,fl:8,boss:"万妖之祖",bHp:2500,bAtk:400,rwd:1800,cost:120},
-        {name:"封神战场",realmReq:6,fl:9,boss:"上古神魔",bHp:4000,bAtk:650,rwd:3000,cost:200}
+        {name:"妖兽巢穴",realmReq:0,realmLvl:0,fl:3,boss:"妖王",bHp:150,bAtk:25,rwd:80,cost:10},
+        {name:"幽冥洞",realmReq:1,realmLvl:1,fl:4,boss:"幽冥老祖",bHp:300,bAtk:45,rwd:180,cost:20},
+        {name:"上古战场",realmReq:2,realmLvl:2,fl:5,boss:"战神残魂",bHp:550,bAtk:80,rwd:350,cost:35},
+        {name:"天魔殿",realmReq:3,realmLvl:3,fl:6,boss:"混世魔王",bHp:900,bAtk:140,rwd:600,cost:55},
+        {name:"诛仙台",realmReq:4,realmLvl:4,fl:7,boss:"邪剑仙",bHp:1500,bAtk:240,rwd:1000,cost:80},
+        {name:"万妖塔",realmReq:5,realmLvl:5,fl:8,boss:"万妖之祖",bHp:2500,bAtk:400,rwd:1800,cost:120},
+        {name:"封神战场",realmReq:6,realmLvl:6,fl:9,boss:"上古神魔",bHp:4000,bAtk:650,rwd:3000,cost:200}
     ],
     ACHS: [
         {id:"fb",name:"初窥门径",desc:"首次突破大境界",ck:function(s){return s.r>=1;},rwd:50},
@@ -365,7 +374,8 @@ var G = {
             par:null,
             skls:[],scds:{},
             eq:{wp:null,ar:null,rg:[]},
-            inv:[],pills:{},tech:null, // 装备背包,丹药,功法
+            inv:[],pills:{},tech:null,techSkills:[], // 装备背包,丹药,当前功法,已获功法库
+            ssense:10,dunst:5, // 神识, 遁速
             pet:null,
             es:{hf:0,ar:0,sa:0,tr:0},
             hhc:0, // 灵田收获冷却
@@ -393,7 +403,10 @@ var G = {
         if(s.tech){
             if(s.tech.atk) s.ba=Math.floor(s.ba*s.tech.atk);
             if(s.tech.def) s.df=Math.floor(s.df*(1+s.tech.def));
+            if(s.tech.hpMul) s.mhp=Math.floor(s.mhp*s.tech.hpMul);
         }
+        // 神识影响炼丹品质 & 探索
+        // 遁速影响云游效率（在rove等函数中使用）
         s.msp=rm.spiritMax+s.r*5;
         if(rm.lifeBonus>5000) s.mag=1e99;
         else s.mag=80+rm.lifeBonus+(s.lfb||0)-(s.agr||0);
@@ -697,6 +710,10 @@ var G = {
             if(this.s.r===3&&this.s.skls.indexOf('iceshard')<0) this.learnSkill('iceshard');
             if(this.s.r===4&&this.s.skls.indexOf('thunder')<0) this.learnSkill('thunder');
             if(this.s.r===5&&this.s.skls.indexOf('healskill')<0) this.learnSkill('healskill');
+            // 神识 & 遁速增长
+            var sg=this.rng(3,8), dg=this.rng(2,5);
+            this.s.ssense=(this.s.ssense||0)+sg;
+            this.s.dunst=(this.s.dunst||0)+dg;
         }else{
             this.rma(10);this.s.sp=Math.floor(this.s.sp*0.5);
             this.s.cv=Math.floor(this.s.cv*0.4);this.s.hp=Math.floor(this.s.hp*0.5);
@@ -788,7 +805,10 @@ var G = {
         if(this.s.ss<18||this.s.hb<2){this.log("需18灵石+2药材");return;}
         var mx=this.maxCv();if(this.s.cv>=mx){this.log("修为已满");return;}
         this.s.ss-=18;this.s.hb-=2;this.s.ac=(this.s.ac||0)+1;
-        if(this.ch(0.85)){var g=Math.floor((45+this.s.r*15)*(0.9+Math.random()*0.2));this.s.cv=Math.min(this.s.cv+g,mx);this.log("炼丹成功 +"+g+"修为");}
+        // 神识影响炼丹成功率 & 品质
+        var sc=this.s.ssense||0;
+        var alcCh=Math.min(0.95,0.85+sc*0.001);
+        if(this.ch(alcCh)){var g=Math.floor((45+this.s.r*15+sc*0.5)*(0.9+Math.random()*0.2));this.s.cv=Math.min(this.s.cv+g,mx);this.log("炼丹成功 +"+g+"修为");}
         else this.log("丹炉炸裂");
         this.cy(0.4);this.checkAch();this.refresh();
     },
@@ -797,12 +817,33 @@ var G = {
         var tech=this.TECHNIQUES.filter(function(t){return t.id===tid;})[0];
         if(!tech) return;
         if(this.s.r<tech.req){this.log("需"+this.REALMS[tech.req].name+"方可修炼");return;}
-        if(this.s.tech&&this.s.tech.id===tid){this.log("已修炼此功法");return;}
-        if(this.s.ss<tech.cost){this.log("需"+tech.cost+"灵石");return;}
-        this.s.ss-=tech.cost;
+        if(!this.s.techSkills) this.s.techSkills=[];
+        if(this.s.techSkills.indexOf(tid)>=0 && this.s.tech&&this.s.tech.id===tid){this.log("已修炼此功法");return;}
+        // 记录已获得
+        if(this.s.techSkills.indexOf(tid)<0) this.s.techSkills.push(tid);
+        // 切换功法
         var old=this.s.tech?this.s.tech.name:'无';
-        this.s.tech={id:tech.id,name:tech.name,cv:tech.cv,atk:tech.atk,def:tech.def,hpMul:tech.hpMul||0};
-        this.recalc();this.log("修炼功法【"+tech.name+"】(替换"+old+")");this.refresh();
+        this.s.tech={id:tech.id,name:tech.name,cv:tech.cv,atk:tech.atk,def:tech.def||0,hpMul:tech.hpMul||0,dunst:tech.dunst||0,ssense:tech.ssense||0};
+        this.recalc();this.s.hp=this.s.mhp;
+        var tiers={黄:'🟤',玄:'🟣',地:'🔵',天:'🟡'};
+        this.log("修炼功法【"+(tiers[tech.tier]||'')+tech.name+'】('+tech.tier+'级'+(old!=='无'?'，替换'+old:'')+')');
+        this.refresh();
+    },
+    // 获取功法（各系统调用，不自动装备）
+    _acquireTech: function(tid){
+        if(!this.s.techSkills) this.s.techSkills=[];
+        if(this.s.techSkills.indexOf(tid)>=0) return false;
+        var tech=this.TECHNIQUES.filter(function(t){return t.id===tid;})[0];
+        if(!tech) return false;
+        if(this.s.r<tech.req) return false;
+        this.s.techSkills.push(tid);
+        var tiers={黄:'🟤',玄:'🟣',地:'🔵',天:'🟡'};
+        this.log("📖 获得功法【"+(tiers[tech.tier]||'')+tech.name+'】('+tech.tier+'级)，可在洞府切换');
+        // 首次获得自动装备
+        if(!this.s.tech||this.s.tech.id==='basicQi'){
+            this.s.tech={id:tech.id,name:tech.name,cv:tech.cv,atk:tech.atk,def:tech.def||0,hpMul:tech.hpMul||0,dunst:tech.dunst||0,ssense:tech.ssense||0};
+        }
+        this.recalc();return true;
     },
     // ===== 突破丹药 =====
     craftPill: function(pid){
@@ -986,8 +1027,16 @@ var G = {
             if(!this.s.pet&&this.ch(0.1)){var pt=G.PETS[Math.floor(Math.random()*G.PETS.length)];this.s.pet={nm:pt.name,atk:pt.atk,def:pt.def,hp:pt.hp,lv:1,exp:0,evo:false,evoLv:pt.evoLv,evoName:pt.evoName,evoAtk:pt.evoAtk,evoDef:pt.evoDef,evoHp:pt.evoHp};logs.push("发现灵宠【"+pt.name+"】");}
         }
         if(logs.length) this.log("云游："+logs.join("；"));
+        // 功法掉落
+        if(this.ch(0.12)){
+            var pool=this.techPools.wd;
+            var tid=pool[Math.floor(Math.random()*pool.length)];
+            if(this._acquireTech(tid)) this.log("📖 云游偶得功法！");
+        }
         if(!db&&this.ch(0.3)) this.triggerEv('wd');
-        this.recalc();if(!this.cy(db?0.8:0.5)) return;
+        // 遁速减少云游耗时
+        var dunstBonus=this.s.dunst||0;
+        this.recalc();if(!this.cy((db?0.8:0.5)*Math.max(0.6,1-dunstBonus*0.05))) return;
         this.updDaily('ad');this.refresh();
     },
     gathHerb: function(){
@@ -1019,6 +1068,13 @@ var G = {
         else if(r<0.9&&decay>0.5){this.s.hb+=Math.floor(2*decay);this.log("药材+"+Math.floor(2*decay));}
         else{this.s.hp=Math.max(0,this.s.hp-30);this.rma(3);this.log("秘境遇险");if(this.s.hp<=0) this.hpDeath();}
         if(!this.s.par&&this.ch(0.18)) this.createPartner();
+        // 功法掉落(神识越高越容易发现功法)
+        var sc=this.s.ssense||0;
+        if(this.ch(0.08+sc*0.004)){
+            var pool=this.techPools.sc;
+            var tid=pool[Math.floor(Math.random()*pool.length)];
+            if(this._acquireTech(tid)) this.log("📖 秘境中发现功法！");
+        }
         if(!this.cy(1.0)) return;
         this.refresh();
     },
@@ -1125,16 +1181,24 @@ var G = {
             s.ss+=t.rwd;this.log("击败"+t.name+"！灵石+"+t.rwd);
             if(isB){
                 s.dc=(s.dc||0)+1;
-                var bRwd=this.DUNGEONS[s.di].rwd*2+s.r*50;
-                var extra='灵石+'+bRwd;
+                var dg=this.DUNGEONS[s.di];
+                var diff=s.r-dg.realmLvl;
+                var ddecay=diff<=0?1:Math.pow(0.2,diff);
+                var bRwd=Math.floor((dg.rwd*2+s.r*30)*ddecay);
+                var extra='灵石+'+bRwd+(ddecay<1?'(衰减'+(ddecay*100).toFixed(0)+'%)':'');
                 var eq=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];
                 var item={t:eq.t,name:eq.name,atk:eq.atk||0,def:eq.def||0,hp:eq.hp||0};
                 s.inv.push(item);extra+=', '+eq.name;
-                s.hb+=2+this.rng(0,3);extra+=',药材+'+(2+this.rng(0,3));
-                s.bbrb=Math.min(100,s.bbrb+3);extra+=',突破率+3%';
-                s.lfb=(s.lfb||0)+2;extra+=',寿元上限+2';
+                s.hb+=Math.floor((2+this.rng(0,3))*ddecay);extra+=',药材+'+(2+this.rng(0,3));
+                s.bbrb=Math.min(100,s.bbrb+Math.floor(3*ddecay));extra+=',突破率+'+(Math.floor(3*ddecay))+'%';
+                s.lfb=(s.lfb||0)+Math.floor(2*ddecay);extra+=',寿元上限+'+Math.floor(2*ddecay);
                 s.ss+=bRwd;
-                this.log(this.DUNGEONS[s.di].name+"通关！获得："+extra);
+                if(ddecay>0.3&&this.ch(0.35*ddecay)){
+                    var pool=this.techPools.dg;
+                    var tid=pool[Math.floor(Math.random()*pool.length)];
+                    if(this._acquireTech(tid)) extra+=', 📖功法';
+                }
+                this.log(dg.name+"通关！获得："+extra);
                 this.recalc();this.checkAch();
                 s.dboss=null;s.di=-1;
                 this.recalc();this.refresh();
@@ -1166,16 +1230,24 @@ var G = {
             s.ss+=t.rwd;this.log("击败"+t.name+"！灵石+"+t.rwd);
             if(isB){
                 s.dc=(s.dc||0)+1;
-                var bRwd=this.DUNGEONS[s.di].rwd*2+s.r*50;
-                var extra='灵石+'+bRwd;
+                var dg=this.DUNGEONS[s.di];
+                var diff=s.r-dg.realmLvl;
+                var ddecay=diff<=0?1:Math.pow(0.2,diff);
+                var bRwd=Math.floor((dg.rwd*2+s.r*30)*ddecay);
+                var extra='灵石+'+bRwd+(ddecay<1?'(衰减'+(ddecay*100).toFixed(0)+'%)':'');
                 var eq=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];
                 var item={t:eq.t,name:eq.name,atk:eq.atk||0,def:eq.def||0,hp:eq.hp||0};
                 s.inv.push(item);extra+=', '+eq.name;
-                s.hb+=2+this.rng(0,3);extra+=',药材+'+(2+this.rng(0,3));
-                s.bbrb=Math.min(100,s.bbrb+3);extra+=',突破率+3%';
-                s.lfb=(s.lfb||0)+2;extra+=',寿元上限+2';
+                s.hb+=Math.floor((2+this.rng(0,3))*ddecay);extra+=',药材+'+(2+this.rng(0,3));
+                s.bbrb=Math.min(100,s.bbrb+Math.floor(3*ddecay));extra+=',突破率+'+(Math.floor(3*ddecay))+'%';
+                s.lfb=(s.lfb||0)+Math.floor(2*ddecay);extra+=',寿元上限+'+Math.floor(2*ddecay);
                 s.ss+=bRwd;
-                this.log(this.DUNGEONS[s.di].name+"通关！获得："+extra);
+                if(ddecay>0.3&&this.ch(0.35*ddecay)){
+                    var pool=this.techPools.dg;
+                    var tid=pool[Math.floor(Math.random()*pool.length)];
+                    if(this._acquireTech(tid)) extra+=', 📖功法';
+                }
+                this.log(dg.name+"通关！获得："+extra);
                 this.recalc();this.checkAch();
                 s.dboss=null;s.di=-1;
                 this.recalc();this.refresh();
@@ -1214,12 +1286,22 @@ var G = {
         var op=this.s.aopp;
         var dmg=Math.floor(this.s.ba*(0.8+Math.random()*0.7));
         if(this.s.pet) dmg+=Math.floor((this.s.pet.evo?this.s.pet.evoAtk:this.s.pet.atk)*0.8);
+        // 遁速先手
+        if((this.s.dunst||0)>0&&this.ch(Math.min(0.3,this.s.dunst*0.02))){
+            dmg=Math.floor(dmg*1.2);this.log("⚡遁速先手！伤害+20%");
+        }
         dmg=Math.max(1,dmg-op.df);
         op.hp-=dmg;this.log("对"+op.name+"造成"+dmg+"伤害");
         if(op.hp<=0){
             this.s.ss+=30+op.rr*15;this.s.aw=(this.s.aw||0)+1;
             this.s.ark=Math.max(1,this.s.ark-this.rng(1,5));
             this.log("击败"+op.name+"！灵石+"+(30+op.rr*15)+"，排名"+this.s.ark);
+            // 功法掉落
+            if(this.ch(0.1+this.s.aw*0.005)){
+                var pool=this.techPools.ar;
+                var tid=pool[Math.floor(Math.random()*pool.length)];
+                if(this._acquireTech(tid)) this.log("📖 竞技获胜，悟得功法！");
+            }
             this.s.aopp=null;this.checkAch();
         }else{
             var ed=Math.floor(op.atk*(0.6+Math.random()*0.6));
@@ -1241,6 +1323,11 @@ var G = {
             this.s.ss+=30+op.rr*15;this.s.aw=(this.s.aw||0)+1;
             this.s.ark=Math.max(1,this.s.ark-this.rng(1,5));
             this.log("击败"+op.name+"！灵石+"+(30+op.rr*15)+"，排名"+this.s.ark);
+            if(this.ch(0.1+this.s.aw*0.005)){
+                var pool=this.techPools.ar;
+                var tid=pool[Math.floor(Math.random()*pool.length)];
+                if(this._acquireTech(tid)) this.log("📖 竞技获胜，悟得功法！");
+            }
             this.s.aopp=null;this.checkAch();
         }else{
             var op=this.s.aopp;
@@ -1303,7 +1390,7 @@ var G = {
             var def=this.defState();
             for(var k in def){if(ld.hasOwnProperty(k))this.s[k]=ld[k];else this.s[k]=def[k];}
             // Fix numeric fields
-            var nf=['r','sr','cv','sp','msp','hp','mhp','ba','df','ss','ag','mag','mrw','dflr','dc','di','bbr','bbrb','bpu','gu','ctr','hb','aw','ark','mk','ac','lfb','agr','ftl'];
+            var nf=['r','sr','cv','sp','msp','hp','mhp','ba','df','ss','ag','mag','mrw','dflr','dc','di','bbr','bbrb','bpu','gu','ctr','hb','aw','ark','mk','ac','lfb','agr','ftl','ssense','dunst'];
             var self=this;
             nf.forEach(function(f){if(typeof self.s[f]!=='number'||!isFinite(self.s[f]))self.s[f]=def[f];});
             if(!Array.isArray(this.s.mons)||!this.s.mons.length) this.genMons();
@@ -1319,6 +1406,7 @@ var G = {
             if(typeof this.s.shld!=='number') this.s.shld=0;
             if(!this.s.pills||typeof this.s.pills!=='object') this.s.pills={};
             if(this.s.tech&&typeof this.s.tech!=='object') this.s.tech=null;
+            if(!Array.isArray(this.s.techSkills)) this.s.techSkills=[];
             this.recalc();
             if(!isFinite(this.s.hp)||this.s.hp<=0) this.s.hp=this.s.mhp;
             if(this.s.hp>this.s.mhp) this.s.hp=this.s.mhp;
@@ -1334,7 +1422,7 @@ var G = {
             if(!ld||typeof ld!=='object'){this._toast('存档损坏');return;}
             var def=this.defState();
             for(var k in def){if(ld.hasOwnProperty(k))this.s[k]=ld[k];else this.s[k]=def[k];}
-            var nf=['r','sr','cv','sp','msp','hp','mhp','ba','df','ss','ag','mag','mrw','dflr','dc','di','bbr','bbrb','bpu','gu','ctr','hb','aw','ark','mk','ac','lfb','agr','ftl'];
+            var nf=['r','sr','cv','sp','msp','hp','mhp','ba','df','ss','ag','mag','mrw','dflr','dc','di','bbr','bbrb','bpu','gu','ctr','hb','aw','ark','mk','ac','lfb','agr','ftl','ssense','dunst'];
             var self=this;
             nf.forEach(function(f){if(typeof self.s[f]!=='number'||!isFinite(self.s[f]))self.s[f]=def[f];});
             if(!Array.isArray(this.s.mons)||!this.s.mons.length) this.genMons();
@@ -1350,6 +1438,7 @@ var G = {
             if(typeof this.s.shld!=='number') this.s.shld=0;
             if(!this.s.pills||typeof this.s.pills!=='object') this.s.pills={};
             if(this.s.tech&&typeof this.s.tech!=='object') this.s.tech=null;
+            if(!Array.isArray(this.s.techSkills)) this.s.techSkills=[];
             this.recalc();
             if(!isFinite(this.s.hp)||this.s.hp<=0) this.s.hp=this.s.mhp;
             if(this.s.hp>this.s.mhp) this.s.hp=this.s.mhp;
@@ -1369,6 +1458,8 @@ var G = {
         this.s.rt=Object.keys(this.ROOTS)[Math.floor(Math.random()*5)];
         this.s.bbr=5+this.rng(1,15);
         this.genMons();this.recalc();this.s.hp=this.s.mhp;
+        this.s.techSkills=['basicQi'];
+        this.s.tech={id:'basicQi',name:'基础吐纳术',cv:0,atk:0,def:0,dunst:0,ssense:0};
         this.log(sil?"寿元耗尽，轮回重修。":"重修，道心弥坚。");
         this.refresh();this.save();
     },
@@ -1377,6 +1468,9 @@ var G = {
         this.s.rt=Object.keys(this.ROOTS)[Math.floor(Math.random()*5)];
         this.s.bbr=5+this.rng(1,15);
         this.recalc();this.genMons();this.s.hp=this.s.mhp;
+        // 初始功法
+        this.s.techSkills=['basicQi'];
+        this.s.tech={id:'basicQi',name:'基础吐纳术',cv:0,atk:0,def:0,dunst:0,ssense:0};
         var self=this;
         this.mod('<h3>选择性别</h3><div><span class="gopt" id="gm">男</span><span class="gopt" id="gf">女</span></div><button class="btn" id="cfgBtn" disabled>确定</button>');
         var sg=null;
@@ -1472,7 +1566,7 @@ var G = {
             h+='<div class="card"><span>技能：'+(this.s.skls.length>0?this.s.skls.map(function(s){var sk=G.SKILLS.filter(function(x){return x.id===s;})[0];return sk?sk.name:'';}).join(', '):'无')+'</span><button class="btn bs" onclick="G._rename();">改名</button></div>';
             // 功法
             var tec=this.s.tech;
-            h+='<div class="card"><span>功法：<span style="color:#ffd78b;">'+(tec?tec.name:'未修炼')+'</span>'+(tec?'<small> 修+'+(tec.cv*100).toFixed(0)+'%</small>':'')+'</span><button class="btn bs" onclick="G._showTech();">选择</button></div>';
+            h+='<div class="card"><span>功法：<span style="color:#ffd78b;">'+(tec?tec.name:'基础吐纳术')+'</span>'+(tec?'<small> 修+'+(tec.cv*100).toFixed(0)+'%</small>':'')+(tec&&tec.dunst?'<small> 遁+'+(tec.dunst*100).toFixed(0)+'%</small>':'')+(tec&&tec.ssense?'<small> 神+'+(tec.ssense*100).toFixed(0)+'%</small>':'')+'</span><button class="btn bs" onclick="G._showTech();">选择('+(this.s.techSkills||[]).length+'种)</button></div>';
             // 突破丹药库存
             var pks=Object.keys(this.s.pills||{}).filter(function(k){return (G.s.pills[k]||0)>0;});
             if(pks.length>0){
@@ -1670,12 +1764,17 @@ var G = {
     _showTech: function(){
         var h='<h3>选择功法</h3>', self=this;
         var cur=this.s.tech;
-        if(cur) h+='<div style="font-size:0.7rem;color:#ffd78b;margin:0.3rem;">当前：'+cur.name+' (修+'+(cur.cv*100).toFixed(0)+'%'+(cur.atk?' 攻+'+(cur.atk*100-100).toFixed(0)+'%':'')+(cur.def?' 防+'+(cur.def*100).toFixed(0)+'%':'')+(cur.hpMul?' HP+'+(cur.hpMul*100-100).toFixed(0)+'%':'')+')</div>';
+        var skls=this.s.techSkills||[];
+        if(cur) h+='<div style="font-size:0.7rem;color:#ffd78b;margin:0.3rem;">当前：'+cur.name+(cur.cv?' 修+'+(cur.cv*100).toFixed(0)+'%':'')+(cur.atk?' 攻+'+(cur.atk*100-100).toFixed(0)+'%':'')+(cur.def?' 防+'+(cur.def*100).toFixed(0)+'%':'')+(cur.dunst?' 遁速+'+(cur.dunst*100).toFixed(0)+'%':'')+(cur.ssense?' 神识+'+(cur.ssense*100).toFixed(0)+'%':'')+'</div>';
+        var tiers={黄:'🟤',玄:'🟣',地:'🔵',天:'🟡'};
+        var hasAny=false;
         this.TECHNIQUES.forEach(function(t){
-            var lkd=self.s.r<t.req;
+            if(skls.indexOf(t.id)<0) return; hasAny=true;
             var has=t.id===self.s.tech?.id;
-            h+='<div class="card" style="'+(lkd?'opacity:0.5;':'')+(has?'border-color:#ffd700;':'')+'"><span><b>'+t.name+'</b><br><small>'+t.desc+(has?' ✅':lkd?' 需'+self.REALMS[t.req].name:'')+(t.cost>0?' 灵石'+t.cost:'')+'</small></span>'+(has?'':'<button class="btn bs pr" '+(lkd?'disabled':'onclick="G.learnTech(\''+t.id+'\');G.save();G.closeMod();G.refresh();"')+'>'+(lkd?'🔒':'修炼')+'</button>')+'</div>';
+            var tc=tiers[t.tier]||'';
+            h+='<div class="card" style="'+(has?'border-color:#ffd700;':'')+'"><span><b>'+tc+t.name+'</b> <small>('+t.tier+'级)</small><br><small>'+(t.cv?'修+'+(t.cv*100).toFixed(0)+'% ':'')+(t.atk?'攻+'+(t.atk*100-100).toFixed(0)+'% ':'')+(t.def?'防+'+(t.def*100).toFixed(0)+'% ':'')+(t.dunst?'遁+'+(t.dunst*100).toFixed(0)+'% ':'')+(t.ssense?'神+'+(t.ssense*100).toFixed(0)+'%':'')+'</small></span>'+(has?'✅':''+(t.req>self.s.r?'🔒':'')+'<button class="btn bs pr" onclick="G.learnTech(\''+t.id+'\');G.save();G.closeMod();G.refresh();">切换</button>')+'</div>';
         });
+        if(!hasAny) h+='<div style="font-size:0.7rem;color:#888;">暂无功法，通过副本/秘境/云游/竞技获取</div>';
         h+='<button class="btn bs" onclick="G.closeMod();">关闭</button>';
         this.mod(h);
     },
@@ -1771,6 +1870,7 @@ var G = {
         h+='<div class="si">灵石 <span>'+s.ss+'</span></div>';
         h+='<div class="si">攻 <span>'+s.ba+'</span> | 防 <span>'+s.df+'</span></div>';
         h+='<div class="si">寿元 <span>'+ageStr+'</span>'+(s.r===6?' 飞升倒计时:'+Math.floor(s.ftl):'')+'</div>';
+        h+='<div class="si">神识 <span>'+(s.ssense||0)+'</span> | 遁速 <span>'+(s.dunst||0)+'</span></div>';
         h+='<div class="si">突破率 <span>'+this.brRate()+'%</span> | 药材 <span>'+s.hb+'</span></div>';
         var pct=Math.min(100,(s.cv/this.maxCv())*100);
         h+='<div class="sbar"><span class="sbl">修为</span><div class="sbf"><div class="sbi" style="width:'+pct+'%"></div></div><span class="sbt">'+s.cv+'/'+this.maxCv()+'</span></div>';
