@@ -262,6 +262,15 @@ var G = {
         {name:"飞升境",atkMul:800,spiritMax:1200,lifeBonus:1e99,hpBase:2500,subCost:[35000,50000]}
     ],
     ROOTS: {five:{name:"五灵根",mult:0.5},four:{name:"四灵根",mult:0.6},three:{name:"三灵根",mult:0.8},double:{name:"双灵根",mult:1.2},heaven:{name:"天灵根",mult:1.5}},
+    SECRET_REALMS: [
+        {name:"炼气秘境",minR:0,cost:10,ss:35,cv:6},
+        {name:"筑基秘境",minR:1,cost:20,ss:80,cv:18},
+        {name:"金丹秘境",minR:2,cost:35,ss:180,cv:40},
+        {name:"元婴秘境",minR:3,cost:55,ss:380,cv:90},
+        {name:"化神秘境",minR:4,cost:80,ss:750,cv:190},
+        {name:"渡劫秘境",minR:5,cost:120,ss:1400,cv:380},
+        {name:"大乘秘境",minR:6,cost:180,ss:2500,cv:750},
+    ],
     SKILLS: [
         {id:"fireball",name:"火球术",desc:"150%攻",cost:8,cdMax:0},
         {id:"iceshard",name:"冰锥术",desc:"120%攻+减速",cost:10,cdMax:1},
@@ -922,33 +931,44 @@ var G = {
         this.cy(0.5);this.refresh();
     },
 
-    // ===== 秘境（收益随境界递减，高境界打低收益秘境几无收益） =====
-    secExp: function(){
+    // ===== 秘境（分境界梯度，越级收益断崖式衰减） =====
+    secExp: function(idx){
         if(this.chkEv()) return;
-        if(this.s.sp<20){this.log("灵力不足");return;}
-        this.s.sp-=20;
-        // 秘境收益衰减：境界越高，基础秘境收益越低（需不断挑战更高难度）
-        var decay=Math.max(0.08,1-this.s.r*0.15);
+        var sr=this.SECRET_REALMS[idx];
+        if(!sr){return;}
+        if(this.s.sp<sr.cost){this.log("灵力不足(需"+sr.cost+")");return;}
+        // 境界匹配度：高于秘境需求时收益急剧衰减
+        var diff=this.s.r-sr.minR;
+        var decay=diff<=0?1:Math.pow(0.15,diff); // 1级=15%, 2级=2.25%, 3级≈0.3%
+        if(decay<0.01) decay=0;
+        this.s.sp-=sr.cost;
+        if(decay<=0){this.log(sr.name+"已无探索价值(境界差距过大)");this.cy(0.3);this.refresh();return;}
         var r=Math.random();
         if(r<0.2){this.triggerEv('sc');return;}
-        else if(r<0.4){var ss=Math.floor((40+this.s.r*8)*decay);this.s.ss+=ss;this.log("秘境灵石+"+ss);}
-        else if(r<0.6){var cv=Math.floor((8+this.s.r*2)*decay);this.s.cv=Math.min(this.s.cv+cv,this.maxCv());this.log("秘境悟道+"+cv);}
-        else if(r<0.75&&this.ch(0.3+decay*0.5)){var e=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];this.addEq({t:e.t,name:e.name,atk:e.atk||0,def:e.def||0,hp:e.hp||0});}
-        else if(r<0.9&&decay>0.3){this.s.hb+=Math.floor(2*decay);this.log("药材+"+Math.floor(2*decay));}
-        else{this.s.hp=Math.max(0,this.s.hp-35);this.rma(5);this.log("秘境遇险");if(this.s.hp<=0) this.hpDeath();}
-        if(!this.s.par&&this.ch(0.2)) this.createPartner();
-        if(!this.cy(1.2)) return;
+        else if(r<0.4){var ss=Math.floor(sr.ss*decay);this.s.ss+=ss;this.log(sr.name+"灵石+"+ss+(decay<1?'(衰减'+(decay*100).toFixed(0)+'%)':''));}
+        else if(r<0.6){var cv=Math.floor(sr.cv*decay);this.s.cv=Math.min(this.s.cv+cv,this.maxCv());this.log(sr.name+"悟道+"+cv+(decay<1?'(衰减'+(decay*100).toFixed(0)+'%)':''));}
+        else if(r<0.75&&decay>0.7){var e=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];this.addEq({t:e.t,name:e.name,atk:e.atk||0,def:e.def||0,hp:e.hp||0});}
+        else if(r<0.9&&decay>0.5){this.s.hb+=Math.floor(2*decay);this.log("药材+"+Math.floor(2*decay));}
+        else{this.s.hp=Math.max(0,this.s.hp-30);this.rma(3);this.log("秘境遇险");if(this.s.hp<=0) this.hpDeath();}
+        if(!this.s.par&&this.ch(0.18)) this.createPartner();
+        if(!this.cy(1.0)) return;
         this.refresh();
     },
-    secSkill: function(){
+    secSkill: function(idx){
         if(this.chkEv()) return;
-        if(this.s.sp<30){this.log("灵力不足");return;}
-        this.s.sp-=30;
+        var sr=this.SECRET_REALMS[idx];
+        if(!sr) return;
+        var diff=this.s.r-sr.minR;
+        var decay=diff<=0?1:Math.pow(0.15,diff);
+        if(decay<0.05){this.log(sr.name+"已无探索价值");this.refresh();return;}
+        var cost=Math.floor(sr.cost*1.5);
+        if(this.s.sp<cost){this.log("灵力不足(需"+cost+")");return;}
+        this.s.sp-=cost;
         var avl=this.SKILLS.filter(function(s){return G.s.skls.indexOf(s.id)<0;});
-        if(avl.length>0&&this.ch(0.5)){
+        if(avl.length>0&&this.ch(0.5*decay)){
             this.learnSkill(avl[Math.floor(Math.random()*avl.length)].id);
-        }else{this.s.ss+=50+this.s.r*20;this.log("感悟失败，灵石补偿");}
-        if(!this.cy(0.8)) return;
+        }else{var ss=Math.floor(sr.ss*0.6*decay);this.s.ss+=ss;this.log("感悟失败，灵石+"+ss);}
+        if(!this.cy(0.7)) return;
         this.refresh();
     },
 
@@ -1448,10 +1468,22 @@ var G = {
             document.getElementById('pnlMarket').innerHTML=h;
             break;
         case 'secret':
-            h=this._charHeader()+'<div style="text-align:center;font-size:0.8rem;">秘境·高风险高回报</div>';
-            h+='<div class="cg"><button class="btn dg" onclick="G.secExp();G.save();">探索秘境(-20)</button>';
-            h+='<button class="btn" onclick="G.secSkill();G.save();">感悟技能(-30)</button></div>';
-            h+='<div style="font-size:0.65rem;color:#888;">可能获得：灵石、装备、药材、修为、技能</div>';
+            h=this._charHeader()+'<div style="text-align:center;font-size:0.8rem;color:#d4b868;">秘境探索（境界匹配制）</div>';
+            h+='<div style="font-size:0.65rem;color:#888;text-align:center;">越级碾压收益极微，挑战同级秘境为王道</div>';
+            var self=this;
+            this.SECRET_REALMS.forEach(function(sr,i){
+                var diff=self.s.r-sr.minR;
+                var decay=diff<=0?1:Math.pow(0.15,diff);
+                var locked=self.s.r<sr.minR;
+                var style=diff===0?'pr':diff<0?'':'';
+                var label=locked?'🔒 需'+self.REALMS[sr.minR].name:decay>=0.5?(diff<=0?'同级·最优':'衰减'+(decay*100).toFixed(0)+'%'):'无价值';
+                var color=locked?'#666':decay>=0.8?'#ffe8a0':decay>=0.3?'#b7a17c':'#666';
+                h+='<div class="card"><span style="color:'+color+';">'+sr.name+' <small>(灵力-'+sr.cost+', 灵石~'+Math.floor(sr.ss*decay)+')</small></span>';
+                if(!locked&&decay>=0.01) h+='<button class="btn bs pr" onclick="G.secExp('+i+');G.save();">探索</button>';
+                else h+='<small style="color:#666;">'+label+'</small>';
+                h+='</div>';
+            });
+            h+='<div class="card"><span>感悟技能（消耗灵力1.5x）</span><button class="btn bs" onclick="G.secSkill('+this.s.r+');G.save();">感悟</button></div>';
             document.getElementById('pnlSecret').innerHTML=h;
             break;
         }
