@@ -1151,12 +1151,11 @@ var G = {
     },
 
     // ===== 坊市 =====
-    buyBp: function(){if(this.s.ss<30||this.s.bpu>=3) return;this.s.ss-=30;this.s.bpu++;this.s.bbrb=Math.min(100,this.s.bbrb+10);this.log("突破率+10%");this.refresh();},
     buySp: function(){if(this.s.ss<15) return;this.s.ss-=15;this.s.sp=Math.min(this.s.msp,this.s.sp+40);this.log("回灵丹");this.refresh();},
     buyLf: function(){if(this.s.ss<500) return;this.s.ss-=500;this.s.lfb=(this.s.lfb||0)+8;this.recalc();this.log("寿元上限+8");this.refresh();},
     buyHb: function(){if(this.s.ss<200) return;this.s.ss-=200;this.s.hb++;this.log("药材+1");this.refresh();},
     _buyTea: function(){if(this.s.ss<30) return;this.s.ss-=30;var g=Math.floor((20+this.s.r*8)*this.cvMul());this.s.cv=Math.min(this.s.cv+g,this.maxCv());this.log("悟道茶 +"+g+"修为");this.cy(0.1);this.refresh();},
-    _buyFeed: function(){if(this.s.ss<80) return;if(!this.s.pet){this.log("没有灵宠");return;}this.s.ss-=80;this.s.pet.exp+=50;if(this.s.pet.exp>=this.s.pet.evoLv*20&&!this.s.pet.evo){this.s.pet.evo=true;this.s.pet.name=this.s.pet.evoName;this.log("灵宠进化！进阶为【"+this.s.pet.name+"】");}else{this.log("灵宠+"+50+"经验值");}this.recalc();this.refresh();},
+    _buyFeed: function(){if(this.s.ss<80) return;if(!this.s.pet){this.log("没有灵宠");return;}this.s.ss-=80;this.s.pet.exp+=50;if(!this.s.pet.evo&&this.s.pet.lv>=this.s.pet.evoLv&&this.s.pet.exp>=this.s.pet.lv*20){this.s.pet.evo=true;this.s.pet.nm=this.s.pet.evoName;this.s.pet.atk=this.s.pet.evoAtk;this.s.pet.def=this.s.pet.evoDef;this.s.pet.hp=this.s.pet.evoHp;this.log("灵宠进化！【"+this.s.pet.evoName+"】");}else if(this.s.pet.exp>=this.s.pet.lv*20&&!this.s.pet.evo){this.s.pet.lv++;this.s.pet.exp=0;this.s.pet.atk+=2;this.s.pet.def+=1;this.s.pet.hp+=10;this.log("灵宠+"+50+"经验值，升级Lv."+this.s.pet.lv);}else{this.log("灵宠+"+50+"经验值");}this.recalc();this.refresh();},
     _buyCharm: function(){if(this.s.ss<100||this.s.bpu>=3) return;this.s.ss-=100;this.s.bpu++;this.s.bbrb=Math.min(100,this.s.bbrb+5);this.log("使用破境符，突破率+5% ("+this.s.bpu+"/3)");this.refresh();},
 
     // ===== 道侣 =====
