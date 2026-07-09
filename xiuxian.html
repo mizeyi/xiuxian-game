@@ -271,21 +271,21 @@ var G = {
     TECHNIQUES: [
         {id:"basicQi",name:"基础吐纳术",tier:"黄",cv:0,atk:0,def:0,dunst:0,ssense:0,req:0,source:"初始"},
         {id:"greenYuan",name:"青元剑诀",tier:"玄",cv:0.3,atk:1.15,def:0,dunst:0,ssense:0,req:0,source:"副本/云游"},
-        {id:"burningArt",name:"焚诀",tier:"玄",cv:-0.1,atk:1.3,def:0,dunst:0.1,ssense:0,req:1,source:"副本"},
-        {id:"iceHeart",name:"冰心诀",tier:"地",cv:0.5,atk:0,def:0.1,dunst:0,ssense:0.2,req:2,source:"秘境"},
-        {id:"swordSutra",name:"诛仙剑经",tier:"地",cv:0.1,atk:1.4,def:0,dunst:0.2,ssense:0,req:4,source:"副本/竞技"},
-        {id:"starBody",name:"星辰炼体术",tier:"地",cv:0.2,atk:0,def:0.25,hpMul:1.2,dunst:0,ssense:0,req:3,source:"副本"},
-        {id:"daYan",name:"大衍诀",tier:"地",cv:0.6,atk:1.05,def:0.05,dunst:0,ssense:0.3,req:2,source:"秘境"},
-        {id:"voidStep",name:"缩地成寸",tier:"天",cv:0.3,atk:0,def:0.05,dunst:0.4,ssense:0.1,req:4,source:"秘境"},
-        {id:"soulRefine",name:"炼神术",tier:"天",cv:0.3,atk:0.05,def:0,hpMul:1.1,dunst:0,ssense:0.4,req:3,source:"秘境/竞技"},
-        {id:"chaosPrim",name:"混沌原始诀",tier:"天",cv:0.8,atk:1.1,def:0.1,dunst:0.2,ssense:0.2,req:5,source:"秘境/竞技"},
+        {id:"burningArt",name:"焚诀",tier:"玄",cv:-0.1,atk:1.3,def:0,dunst:0.1,ssense:0,req:0,source:"副本/云游"},
+        {id:"iceHeart",name:"冰心诀",tier:"地",cv:0.5,atk:0,def:0.1,dunst:0,ssense:0.2,req:1,source:"秘境"},
+        {id:"swordSutra",name:"诛仙剑经",tier:"地",cv:0.1,atk:1.4,def:0,dunst:0.2,ssense:0,req:2,source:"副本/竞技"},
+        {id:"starBody",name:"星辰炼体术",tier:"地",cv:0.2,atk:0,def:0.25,hpMul:1.2,dunst:0,ssense:0,req:1,source:"副本"},
+        {id:"daYan",name:"大衍诀",tier:"地",cv:0.6,atk:1.05,def:0.05,dunst:0,ssense:0.3,req:1,source:"秘境"},
+        {id:"voidStep",name:"缩地成寸",tier:"天",cv:0.3,atk:0,def:0.05,dunst:0.4,ssense:0.1,req:3,source:"秘境"},
+        {id:"soulRefine",name:"炼神术",tier:"天",cv:0.3,atk:0.05,def:0,hpMul:1.1,dunst:0,ssense:0.4,req:2,source:"秘境/竞技"},
+        {id:"chaosPrim",name:"混沌原始诀",tier:"天",cv:0.8,atk:1.1,def:0.1,dunst:0.2,ssense:0.2,req:4,source:"秘境/竞技"},
     ],
-    // 功法获取权重（各途径）
+    // 功法获取权重（各途径），确保每池都有炼气期可掉落功法
     techPools: {
-        dg:["greenYuan","burningArt","swordSutra","starBody"], // 副本掉落池
-        wd:["greenYuan","burningArt","iceHeart"], // 云游奇遇
-        sc:["iceHeart","daYan","voidStep","soulRefine"], // 秘境
-        ar:["swordSutra","soulRefine","chaosPrim"], // 竞技场
+        dg:["greenYuan","burningArt","starBody","swordSutra"],
+        wd:["greenYuan","burningArt","iceHeart","daYan"],
+        sc:["greenYuan","burningArt","iceHeart","daYan","voidStep","soulRefine"],
+        ar:["greenYuan","swordSutra","soulRefine","chaosPrim"],
     },
     PILLS: [
         {id:"baseElix",name:"筑基丹",desc:"突破率+",realmLvl:1,rwd:30,cost:150,mat:4},
@@ -833,14 +833,25 @@ var G = {
     // 获取功法（各系统调用，不自动装备）
     _acquireTech: function(tid){
         if(!this.s.techSkills) this.s.techSkills=[];
+        // 数组参数：从池中选一个可用的
+        if(Array.isArray(tid)){
+            var eligible=[];
+            for(var i=0;i<tid.length;i++){
+                var t=this.TECHNIQUES.filter(function(x){return x.id===tid[i];})[0];
+                if(t&&this.s.r>=t.req&&this.s.techSkills.indexOf(t.id)<0) eligible.push(t);
+            }
+            if(eligible.length===0) return false;
+            var pick=eligible[Math.floor(Math.random()*eligible.length)];
+            return this._acquireTech(pick.id);
+        }
+        // 单id
         if(this.s.techSkills.indexOf(tid)>=0) return false;
         var tech=this.TECHNIQUES.filter(function(t){return t.id===tid;})[0];
         if(!tech) return false;
         if(this.s.r<tech.req) return false;
         this.s.techSkills.push(tid);
         var tiers={黄:'🟤',玄:'🟣',地:'🔵',天:'🟡'};
-        this.log("📖 获得功法【"+(tiers[tech.tier]||'')+tech.name+'】('+tech.tier+'级)，可在洞府切换');
-        // 首次获得自动装备
+        this.log("📖 获得功法【"+(tiers[tech.tier]||'')+tech.name+"】("+tech.tier+"级)，可在洞府切换");
         if(!this.s.tech||this.s.tech.id==='basicQi'){
             this.s.tech={id:tech.id,name:tech.name,cv:tech.cv,atk:tech.atk,def:tech.def||0,hpMul:tech.hpMul||0,dunst:tech.dunst||0,ssense:tech.ssense||0};
         }
@@ -1044,10 +1055,8 @@ var G = {
         }
         if(logs.length) this.log("云游："+logs.join("；"));
         // 功法掉落（提高概率）
-        if(this.ch(0.2)){
-            var pool=this.techPools.wd;
-            var tid=pool[Math.floor(Math.random()*pool.length)];
-            if(this._acquireTech(tid)) this.log("📖 云游偶得功法！");
+        if(this.ch(0.18)){
+            if(this._acquireTech(this.techPools.wd)) this.log("📖 云游偶得功法！");
         }
         if(!db&&this.ch(0.3)) this.triggerEv('wd');
         // 遁速减少云游耗时
@@ -1087,9 +1096,7 @@ var G = {
         // 功法掉落(神识越高越容易发现功法)
         var sc=this.s.ssense||0;
         if(this.ch(0.12+sc*0.005)){
-            var pool=this.techPools.sc;
-            var tid=pool[Math.floor(Math.random()*pool.length)];
-            if(this._acquireTech(tid)) this.log("📖 秘境中发现功法！");
+            if(this._acquireTech(this.techPools.sc)) this.log("📖 秘境中发现功法！");
         }
         if(!this.cy(1.0)) return;
         this.refresh();
@@ -1212,10 +1219,8 @@ var G = {
                 s.bbrb=Math.min(100,s.bbrb+Math.floor(3*ddecay));extra+=',突破率+'+(Math.floor(3*ddecay))+'%';
                 s.lfb=(s.lfb||0)+Math.floor(2*ddecay);extra+=',寿元上限+'+Math.floor(2*ddecay);
                 s.ss+=bRwd;
-                if(ddecay>0.3&&this.ch(0.45*ddecay)){
-                    var pool=this.techPools.dg;
-                    var tid=pool[Math.floor(Math.random()*pool.length)];
-                    if(this._acquireTech(tid)) extra+=', 📖功法';
+                if(ddecay>0.3&&this.ch(0.35*ddecay)){
+                    if(this._acquireTech(this.techPools.dg)) extra+=', 📖功法';
                 }
                 this.log(dg.name+"通关！获得："+extra);
                 this.recalc();this.checkAch();
@@ -1261,10 +1266,8 @@ var G = {
                 s.bbrb=Math.min(100,s.bbrb+Math.floor(3*ddecay));extra+=',突破率+'+(Math.floor(3*ddecay))+'%';
                 s.lfb=(s.lfb||0)+Math.floor(2*ddecay);extra+=',寿元上限+'+Math.floor(2*ddecay);
                 s.ss+=bRwd;
-                if(ddecay>0.3&&this.ch(0.45*ddecay)){
-                    var pool=this.techPools.dg;
-                    var tid=pool[Math.floor(Math.random()*pool.length)];
-                    if(this._acquireTech(tid)) extra+=', 📖功法';
+                if(ddecay>0.3&&this.ch(0.35*ddecay)){
+                    if(this._acquireTech(this.techPools.dg)) extra+=', 📖功法';
                 }
                 this.log(dg.name+"通关！获得："+extra);
                 this.recalc();this.checkAch();
@@ -1319,10 +1322,8 @@ var G = {
             this.s.ark=Math.max(1,this.s.ark-this.rng(2,8));
             this.log("击败"+op.name+"！灵石+"+(40+op.rr*25)+"，排名"+this.s.ark);
             // 功法掉落
-            if(this.ch(0.1+this.s.aw*0.005)){
-                var pool=this.techPools.ar;
-                var tid=pool[Math.floor(Math.random()*pool.length)];
-                if(this._acquireTech(tid)) this.log("📖 竞技获胜，悟得功法！");
+            if(this.ch(0.12+this.s.aw*0.005)){
+                if(this._acquireTech(this.techPools.ar)) this.log("📖 竞技获胜，悟得功法！");
             }
             this.s.aopp=null;this.checkAch();
         }else{
@@ -1345,10 +1346,8 @@ var G = {
             this.s.ss+=40+op.rr*25;this.s.aw=(this.s.aw||0)+1;
             this.s.ark=Math.max(1,this.s.ark-this.rng(2,8));
             this.log("击败"+op.name+"！灵石+"+(40+op.rr*25)+"，排名"+this.s.ark);
-            if(this.ch(0.1+this.s.aw*0.005)){
-                var pool=this.techPools.ar;
-                var tid=pool[Math.floor(Math.random()*pool.length)];
-                if(this._acquireTech(tid)) this.log("📖 竞技获胜，悟得功法！");
+            if(this.ch(0.12+this.s.aw*0.005)){
+                if(this._acquireTech(this.techPools.ar)) this.log("📖 竞技获胜，悟得功法！");
             }
             this.s.aopp=null;this.checkAch();
         }else{
