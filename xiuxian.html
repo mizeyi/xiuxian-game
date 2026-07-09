@@ -871,10 +871,10 @@ var G = {
         var grade=r>0.9?'极品':r>0.7?'上品':r>0.5?'中品':'下品';
         var mult={下品:0.5,中品:1.0,上品:1.3,极品:1.8};
         if(!this.s.pills[pid]) this.s.pills[pid]={};
-        var gk=grade+'品';
+        var gk=grade; // grade 本身已是"下品/中品/上品/极品"
         this.s.pills[pid][gk]=(this.s.pills[pid][gk]||0)+1;
         var eff=Math.floor(p.rwd*mult[grade]);
-        this.log("炼制"+gk+p.name+"！突破率+"+eff+"%");
+        this.log("炼制"+grade+p.name+"，突破率+"+eff+"%");
         this.refresh();
     },
     usePill: function(pid,grade){
@@ -1812,7 +1812,7 @@ var G = {
                 if(cnt>0){
                     hasAny=true;
                     var mult={下品:0.5,中品:1.0,上品:1.3,极品:1.8};
-                    var eff=Math.floor(p.rwd*mult[gk.replace('品','')]);
+                    var eff=Math.floor(p.rwd*mult[gk]);
                     h+='<div class="card"><span>'+gk+p.name+' x'+cnt+' <small>(突破率+'+eff+'%)</small></span><button class="btn bs pr" onclick="G.usePill('+i+',\''+gk+'\');G.save();G.closeMod();G.refresh();">服用</button></div>';
                 }
             });
