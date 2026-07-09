@@ -258,7 +258,7 @@ var G = {
         {name:"大乘期",atkMul:350,spiritMax:800,lifeBonus:7900,hpBase:1600,subCost:[16000,24000],flyTime:1000},
         {name:"飞升境",atkMul:800,spiritMax:1200,lifeBonus:1e99,hpBase:2500,subCost:[35000,50000]}
     ],
-    ROOTS: {five:{name:"五灵根",mult:0.5},four:{name:"四灵根",mult:0.6},three:{name:"三灵根",mult:0.8},double:{name:"双灵根",mult:1.2},heaven:{name:"天灵根",mult:1.5}},
+    ROOTS: {five:{name:"五灵根(伪)",mult:0.25,desc:"修仙最劣，寸步难行"},four:{name:"四灵根",mult:0.4,desc:"资质平庸"},three:{name:"三灵根",mult:1.0,desc:"中人之姿"},double:{name:"双灵根",mult:1.5,desc:"天资聪颖"},heaven:{name:"天灵根",mult:2.5,desc:"万中无一"}},
     SECRET_REALMS: [
         {name:"炼气秘境",minR:0,cost:10,ss:35,cv:6},
         {name:"筑基秘境",minR:1,cost:20,ss:80,cv:18},
@@ -267,6 +267,23 @@ var G = {
         {name:"化神秘境",minR:4,cost:80,ss:750,cv:190},
         {name:"渡劫秘境",minR:5,cost:120,ss:1400,cv:380},
         {name:"大乘秘境",minR:6,cost:180,ss:2500,cv:750},
+    ],
+    TECHNIQUES: [
+        {id:"basicQi",name:"基础吐纳术",desc:"稳步修炼",cv:0,atk:0,def:0,req:0,cost:0},
+        {id:"greenYuan",name:"青元剑诀",desc:"攻+15%,修+0.3",cv:0.3,atk:1.15,def:0,req:0,cost:200},
+        {id:"daYan",name:"大衍诀",desc:"神识强化,修+0.8",cv:0.8,atk:1.05,def:0.05,req:2,cost:800},
+        {id:"burningArt",name:"焚诀",desc:"攻+30%,修炼略慢",cv:-0.1,atk:1.3,def:0,req:1,cost:400},
+        {id:"iceHeart",name:"冰心诀",desc:"修+0.5,防+10%,抗衰",cv:0.5,atk:0,def:0.1,req:2,cost:600},
+        {id:"swordSutra",name:"诛仙剑经",desc:"攻+40%",cv:0.1,atk:1.4,def:0,req:4,cost:2000},
+        {id:"starBody",name:"星辰炼体术",desc:"防+25%,HP+20%",cv:0.2,atk:0,def:0.25,hpMul:1.2,req:3,cost:1200},
+        {id:"chaosPrim",name:"混沌原始诀",desc:"攻+15%,防+15%,修+1.0",cv:1.0,atk:1.15,def:0.15,req:5,cost:5000},
+    ],
+    PILLS: [
+        {id:"baseElix",name:"筑基丹",desc:"突破率+30%",realmLvl:1,rwd:30,cost:150,mat:4},
+        {id:"goldElix",name:"结金丹",desc:"突破率+25%",realmLvl:2,rwd:25,cost:350,mat:6},
+        {id:"nascentElix",name:"凝婴丹",desc:"突破率+20%",realmLvl:3,rwd:20,cost:800,mat:8},
+        {id:"spiritElix",name:"化神丹",desc:"突破率+15%",realmLvl:4,rwd:15,cost:1800,mat:10},
+        {id:"tribElix",name:"渡劫丹",desc:"突破率+10%",realmLvl:5,rwd:10,cost:4000,mat:12},
     ],
     SKILLS: [
         {id:"fireball",name:"火球术",desc:"150%攻",cost:8,cdMax:0},
@@ -348,7 +365,7 @@ var G = {
             par:null,
             skls:[],scds:{},
             eq:{wp:null,ar:null,rg:[]},
-            inv:[], // 未装备物品背包
+            inv:[],pills:{},tech:null, // 装备背包,丹药,功法
             pet:null,
             es:{hf:0,ar:0,sa:0,tr:0},
             hhc:0, // 灵田收获冷却
@@ -372,6 +389,11 @@ var G = {
         (eq.rg||[]).forEach(function(a){if(a){atk+=a.atk||0;df+=a.def||0;}});
         s.ba=Math.floor(Math.max(1,atk));
         s.df=Math.floor(df);
+        // 功法加成
+        if(s.tech){
+            if(s.tech.atk) s.ba=Math.floor(s.ba*s.tech.atk);
+            if(s.tech.def) s.df=Math.floor(s.df*(1+s.tech.def));
+        }
         s.msp=rm.spiritMax+s.r*5;
         if(rm.lifeBonus>5000) s.mag=1e99;
         else s.mag=80+rm.lifeBonus+(s.lfb||0)-(s.agr||0);
@@ -379,6 +401,7 @@ var G = {
         (eq.rg||[]).forEach(function(a){if(a&&a.hp)s.mhp+=a.hp;});
         if(eq.ar&&eq.ar.hp) s.mhp+=eq.ar.hp;
         if(s.pet) s.mhp+=s.pet.evo? s.pet.evoHp:s.pet.hp;
+        if(s.tech&&s.tech.hpMul) s.mhp=Math.floor(s.mhp*s.tech.hpMul);
         if(!isFinite(s.mhp)||s.mhp<=0) s.mhp=80;
         if(s.sp>s.msp) s.sp=s.msp;
         if(s.hp>s.mhp) s.hp=s.mhp;
@@ -393,12 +416,13 @@ var G = {
     brRate: function(){return Math.min(100,(this.s.bbr||0)+(this.s.bbrb||0));},
     agePen: function(){return Math.max(0.3,1-(this.s.ag-20)*0.006);},
     cvMul: function(){
-        var m=1; m+=this.ROOTS[this.s.rt].mult-0.5;
+        var m=this.ROOTS[this.s.rt].mult; // 灵根倍率直接决定修炼速度
         if(this.s.par) m+=this.s.par.sb||0;
+        if(this.s.tech) m+=this.s.tech.cv||0; // 功法加成
         m*=this.agePen();
         if(this.s.es.sa>0) m+=this.s.es.sa*0.1;
         if(this.s.es.tr>0) m+=this.s.es.tr*0.05;
-        return Math.max(0.3,m);
+        return Math.max(0.15,m);
     },
     cvGain: function(){return Math.floor((4+this.s.r*2.5)*(0.8+Math.random()*0.4)*this.cvMul());},
 
@@ -767,6 +791,52 @@ var G = {
         if(this.ch(0.85)){var g=Math.floor((45+this.s.r*15)*(0.9+Math.random()*0.2));this.s.cv=Math.min(this.s.cv+g,mx);this.log("炼丹成功 +"+g+"修为");}
         else this.log("丹炉炸裂");
         this.cy(0.4);this.checkAch();this.refresh();
+    },
+    // ===== 功法系统 =====
+    learnTech: function(tid){
+        var tech=this.TECHNIQUES.filter(function(t){return t.id===tid;})[0];
+        if(!tech) return;
+        if(this.s.r<tech.req){this.log("需"+this.REALMS[tech.req].name+"方可修炼");return;}
+        if(this.s.tech&&this.s.tech.id===tid){this.log("已修炼此功法");return;}
+        if(this.s.ss<tech.cost){this.log("需"+tech.cost+"灵石");return;}
+        this.s.ss-=tech.cost;
+        var old=this.s.tech?this.s.tech.name:'无';
+        this.s.tech={id:tech.id,name:tech.name,cv:tech.cv,atk:tech.atk,def:tech.def,hpMul:tech.hpMul||0};
+        this.recalc();this.log("修炼功法【"+tech.name+"】(替换"+old+")");this.refresh();
+    },
+    // ===== 突破丹药 =====
+    craftPill: function(pid){
+        var p=this.PILLS[pid];
+        if(!p) return;
+        if(this.s.hb<p.mat){this.log("需"+p.mat+"药材");return;}
+        if(this.s.ss<p.cost){this.log("需"+p.cost+"灵石");return;}
+        this.s.ss-=p.cost;this.s.hb-=p.mat;
+        if(!this.s.pills) this.s.pills={};
+        this.s.pills[pid]=(this.s.pills[pid]||0)+1;
+        var grade=this.ch(0.15)?'极品':this.ch(0.3)?'上品':this.ch(0.5)?'中品':'下品';
+        this.log("炼制"+grade+p.name+"(突破率+"+p.rwd+"%)");
+        this.refresh();
+    },
+    usePill: function(pid){
+        var p=this.PILLS[pid];
+        if(!p) return;
+        if(!this.s.pills||!this.s.pills[pid]){this.log("没有此丹药");return;}
+        if(this.s.r+1!==p.realmLvl){this.log(p.name+"仅用于突破至"+this.REALMS[p.realmLvl].name);return;}
+        this.s.pills[pid]--;
+        this.s.bbrb=Math.min(100,this.s.bbrb+p.rwd);
+        this.log("服用"+p.name+"，突破率+"+p.rwd+"%");
+        this.refresh();
+    },
+    // ===== 逆天改命（重选灵根） =====
+    rerollRoot: function(){
+        if(this.s.ss<5000){this.log("需5000灵石逆天改命");return;}
+        if(!confirm("逆天改命消耗5000灵石，随机重塑灵根，确定？")) return;
+        this.s.ss-=5000;
+        this.s.rt=Object.keys(this.ROOTS)[Math.floor(Math.random()*5)];
+        var rt=this.ROOTS[this.s.rt];
+        this.recalc();this.s.hp=this.s.mhp;
+        this.log("逆天改命！灵根重塑为【"+rt.name+"】("+rt.desc+")");
+        this.refresh();
     },
     dualCv: function(){
         if(this.chkEv()) return;
@@ -1247,6 +1317,8 @@ var G = {
             if(!Array.isArray(this.s.inv)) this.s.inv=[];
             if(typeof this.s.hhc!=='number') this.s.hhc=0;
             if(typeof this.s.shld!=='number') this.s.shld=0;
+            if(!this.s.pills||typeof this.s.pills!=='object') this.s.pills={};
+            if(this.s.tech&&typeof this.s.tech!=='object') this.s.tech=null;
             this.recalc();
             if(!isFinite(this.s.hp)||this.s.hp<=0) this.s.hp=this.s.mhp;
             if(this.s.hp>this.s.mhp) this.s.hp=this.s.mhp;
@@ -1276,6 +1348,8 @@ var G = {
             if(!Array.isArray(this.s.inv)) this.s.inv=[];
             if(typeof this.s.hhc!=='number') this.s.hhc=0;
             if(typeof this.s.shld!=='number') this.s.shld=0;
+            if(!this.s.pills||typeof this.s.pills!=='object') this.s.pills={};
+            if(this.s.tech&&typeof this.s.tech!=='object') this.s.tech=null;
             this.recalc();
             if(!isFinite(this.s.hp)||this.s.hp<=0) this.s.hp=this.s.mhp;
             if(this.s.hp>this.s.mhp) this.s.hp=this.s.mhp;
@@ -1360,7 +1434,8 @@ var G = {
         if(s.eq.wp) eqinfo+=' 🗡️'+s.eq.wp.name;
         if(s.eq.ar) eqinfo+=' 🛡️'+s.eq.ar.name;
         if(s.pet) eqinfo+=' 🐾'+s.pet.nm;
-        var h='<div class="scene-header-bar"><div class="avatar-box '+ac+'"></div><div style="font-size:0.75rem;"><b>'+s.pn+'</b> · '+this.REALMS[s.r].name+'<br><small style="color:#b7a17c;">'+this.ROOTS[s.rt].name+' | 攻'+s.ba+' 防'+s.df+eqinfo+'</small></div></div>';
+        var rt=this.ROOTS[s.rt];
+        var h='<div class="scene-header-bar"><div class="avatar-box '+ac+'"></div><div style="font-size:0.75rem;"><b>'+s.pn+'</b> · '+this.REALMS[s.r].name+'<br><small style="color:'+(rt.mult>=1.5?'#ffd700':rt.mult>=1?'#c7b58a':'#7a6a8b')+';">'+rt.name+'('+rt.desc+')</small>'+(s.tech?'<small style="color:#80d0ff;"> | '+s.tech.name+'</small>':'')+'<br><small style="color:#b7a17c;">攻'+s.ba+' 防'+s.df+eqinfo+'</small></div></div>';
         // 道侣头像
         if(s.par){
             h+='<div class="partner-box" style="margin-left:0.2rem;" title="道侣 '+s.par.nm+' 亲密度'+s.par.it+'"></div>';
@@ -1395,6 +1470,17 @@ var G = {
             if(this.s.pet) h+='<div class="card"><span>灵宠 '+this.s.pet.nm+' Lv.'+this.s.pet.lv+' '+(this.s.pet.evo?'🌟':'')+'</span><button class="btn bs" onclick="G.feedPet();G.save();">喂养(10)</button></div>';
             else h+='<div class="card"><span>灵宠：无</span></div>';
             h+='<div class="card"><span>技能：'+(this.s.skls.length>0?this.s.skls.map(function(s){var sk=G.SKILLS.filter(function(x){return x.id===s;})[0];return sk?sk.name:'';}).join(', '):'无')+'</span><button class="btn bs" onclick="G._rename();">改名</button></div>';
+            // 功法
+            var tec=this.s.tech;
+            h+='<div class="card"><span>功法：<span style="color:#ffd78b;">'+(tec?tec.name:'未修炼')+'</span>'+(tec?'<small> 修+'+(tec.cv*100).toFixed(0)+'%</small>':'')+'</span><button class="btn bs" onclick="G._showTech();">选择</button></div>';
+            // 突破丹药库存
+            var pks=Object.keys(this.s.pills||{}).filter(function(k){return (G.s.pills[k]||0)>0;});
+            if(pks.length>0){
+                var pstr=pks.map(function(k){var p=G.PILLS[k];return p.name+'x'+(G.s.pills[k]||0);}).join(', ');
+                h+='<div class="card"><span>丹药：<span style="color:#ffd78b;">'+pstr+'</span></span><button class="btn bs" onclick="G._showPills();">服用</button></div>';
+            }
+            // 逆天改命（仅高阶可见）
+            if(this.s.r>=2) h+='<div class="card"><span style="color:#888;">逆天改命·重塑灵根</span><button class="btn bs" onclick="G.rerollRoot();G.save();">5000灵石</button></div>';
             document.getElementById('pnlCave').innerHTML=h;
             break;
         case 'estate':
@@ -1404,6 +1490,13 @@ var G = {
             h+='<div class="build-card"><span>丹房 Lv.'+(this.s.es.ar||0)+' (提升炼丹)</span><button class="btn bs" onclick="G.upgEs(\'ar\');G.save();">升级('+([150,350,700,1500][this.s.es.ar||0]||'满')+')</button></div>';
             h+='<div class="build-card"><span>聚灵阵 Lv.'+(this.s.es.sa||0)+' (+'+(this.s.es.sa||0)*10+'%修炼速度)</span><button class="btn bs" onclick="G.upgEs(\'sa\');G.save();">升级('+([200,500,1000,2000][this.s.es.sa||0]||'满')+')</button></div>';
             h+='<div class="build-card"><span>练功房 Lv.'+(this.s.es.tr||0)+' (+'+(this.s.es.tr||0)*5+'%修炼速度)</span><button class="btn bs" onclick="G.upgEs(\'tr\');G.save();">升级('+([120,300,600,1200][this.s.es.tr||0]||'满')+')</button></div>';
+            // 突破丹药炼制
+            h+='<div style="font-size:0.8rem;color:#b7a17c;margin-top:0.3rem;">突破丹药（需药材+灵石）</div>';
+            var self2=this;
+            this.PILLS.forEach(function(p,i){
+                var ok=self2.s.hb>=p.mat&&self2.s.ss>=p.cost;
+                h+='<div class="card"><span>'+p.name+' <small>药材'+p.mat+' 灵石'+p.cost+'</small></span><button class="btn bs" '+(ok?'onclick="G.craftPill('+i+');G.save();"':'disabled')+'>炼制</button></div>';
+            });
             document.getElementById('pnlEstate').innerHTML=h;
             break;
         case 'sect':
@@ -1572,6 +1665,31 @@ var G = {
             if(!ni||!nb) return;
             nb.addEventListener('click',function(){var n=ni.value.trim();if(n){self.s.par.nm=n;self.log("道侣更名为【"+n+"】");}self.closeMod();self.refresh();self.save();});
         },50);
+    },
+    // ===== 功法选择弹窗 =====
+    _showTech: function(){
+        var h='<h3>选择功法</h3>', self=this;
+        var cur=this.s.tech;
+        if(cur) h+='<div style="font-size:0.7rem;color:#ffd78b;margin:0.3rem;">当前：'+cur.name+' (修+'+(cur.cv*100).toFixed(0)+'%'+(cur.atk?' 攻+'+(cur.atk*100-100).toFixed(0)+'%':'')+(cur.def?' 防+'+(cur.def*100).toFixed(0)+'%':'')+(cur.hpMul?' HP+'+(cur.hpMul*100-100).toFixed(0)+'%':'')+')</div>';
+        this.TECHNIQUES.forEach(function(t){
+            var lkd=self.s.r<t.req;
+            var has=t.id===self.s.tech?.id;
+            h+='<div class="card" style="'+(lkd?'opacity:0.5;':'')+(has?'border-color:#ffd700;':'')+'"><span><b>'+t.name+'</b><br><small>'+t.desc+(has?' ✅':lkd?' 需'+self.REALMS[t.req].name:'')+(t.cost>0?' 灵石'+t.cost:'')+'</small></span>'+(has?'':'<button class="btn bs pr" '+(lkd?'disabled':'onclick="G.learnTech(\''+t.id+'\');G.save();G.closeMod();G.refresh();"')+'>'+(lkd?'🔒':'修炼')+'</button>')+'</div>';
+        });
+        h+='<button class="btn bs" onclick="G.closeMod();">关闭</button>';
+        this.mod(h);
+    },
+    // ===== 丹药服用弹窗 =====
+    _showPills: function(){
+        var h='<h3>突破丹药</h3>', self=this;
+        var hasAny=false;
+        this.PILLS.forEach(function(p,i){
+            var cnt=self.s.pills?.[i]||0;
+            if(cnt>0){hasAny=true;h+='<div class="card"><span>'+p.name+' x'+cnt+' <small>('+p.desc+')</small></span><button class="btn bs pr" onclick="G.usePill('+i+');G.save();G.closeMod();G.refresh();">服用</button></div>';}
+        });
+        if(!hasAny) h+='<div style="font-size:0.7rem;color:#888;">无丹药库存，前往仙府炼制</div>';
+        h+='<button class="btn bs" onclick="G.closeMod();">关闭</button>';
+        this.mod(h);
     },
     _showEq: function(){
         var eq=this.s.eq,p=eq.rg||[], inv=this.s.inv||[], self=this;
