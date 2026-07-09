@@ -113,22 +113,19 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 .boss-dragon{background-image:url('game-assets/boss-dragon.webp');}
 .boss-fox{background-image:url('game-assets/boss-fox.webp');}
 .boss-spirit{background-image:url('game-assets/boss-spirit.webp');}
-/* NPC小图标（替代全宽立绘，不占界面空间） */
-.npc-icon{
-    position:absolute;top:0.3rem;right:0.4rem;width:32px;height:32px;border-radius:50%;
-    background-size:cover;background-position:center top;
-    border:2px solid rgba(200,170,100,0.6);z-index:2;
-    box-shadow:0 0 8px rgba(180,150,80,0.3);
+/* NPC立绘 - 全宽展示 */
+.npc-portrait{
+    width:100%;border-radius:0.7rem;margin:0.2rem 0;border:1px solid rgba(200,170,100,0.4);
+    box-shadow:0 0 15px rgba(200,160,80,0.15);overflow:hidden;flex-shrink:0;
 }
-.npc-icon-cave{background-image:url('game-assets/npc-cave.webp');}
-.npc-icon-estate{background-image:url('game-assets/npc-estate.webp');}
-.npc-icon-sect{background-image:url('game-assets/npc-sect.webp');}
-.npc-icon-wild{background-image:url('game-assets/npc-wild.webp');}
-.npc-icon-market{background-image:url('game-assets/npc-market.webp');}
-.npc-icon-secret{background-image:url('game-assets/npc-secret.webp');}
-.npc-icon-dungeon{background-image:url('game-assets/npc-dungeon.webp');}
-.npc-icon-arena{background-image:url('game-assets/npc-arena.webp');}
-/* 旧的NPC大图样式保留但不再使用 */
+.npc-img{width:100%;display:block;border-radius:0.7rem;}
+/* 移动端适配 */
+@media(max-width:480px){
+    .scene-portrait{height:80px;}
+    .boss-img{height:100px;background-size:contain;background-repeat:no-repeat;}
+    .avatar-box{width:38px;height:38px;}
+    .partner-box{width:46px;height:46px;}
+}
 /* 道侣头像 */
 .partner-box{
     width:54px;height:54px;border-radius:50%;border:2px solid #e8a0c0;
@@ -213,7 +210,7 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
     <button class="btn bs" onclick="G.quickHeal();G.save();" title="回满生命(15灵石)">💚回满生命</button>
     <button class="btn bs" onclick="G.quickMed();G.save();" title="调息回复(5灵石)">🌿调息</button>
 </div>
-<div class="scene-portrait" style="position:relative;" id="scenePortrait"><div class="sp-inner">🏔️ 洞府修炼</div><div class="npc-icon npc-icon-cave" id="npcIcon"></div></div>
+<div class="scene-portrait scene-cave" id="scenePortrait"><div class="sp-inner">🏔️ 洞府修炼</div></div>
 <div class="scene-b">
     <button class="scn active" onclick="G.switchScene('cave')">洞府</button>
     <button class="scn" onclick="G.switchScene('estate')">仙府</button>
@@ -705,7 +702,8 @@ var G = {
             html+='<div class="trib-bolt" style="animation-delay:'+(i*0.1)+'s;left:'+(38+i*6)+'%;background:linear-gradient(to bottom,transparent,'+clr+',#fff,'+clr+',transparent);'+sh+';"></div>';
         }
         if(ok){
-            html+='<div class="trib-burst" style="background:radial-gradient(circle,rgba('+this._hex2rgb('#fff'),0.95),rgba('+this._hex2rgb(clr)+',0.6) 30%,rgba('+this._hex2rgb(clr2)+',0.2) 60%,transparent);"></div>';
+            var rgb1=this._hex2rgb('#ffffff'), rgb2=this._hex2rgb(clr), rgb3=this._hex2rgb(clr2);
+            html+='<div class="trib-burst" style="background:radial-gradient(circle,rgba('+rgb1+',0.95),rgba('+rgb2+',0.6) 30%,rgba('+rgb3+',0.2) 60%,transparent);"></div>';
             for(var j=0;j<3;j++) html+='<div class="trib-ring" style="animation-delay:'+(0.3+j*0.25)+'s;border-color:rgba('+this._hex2rgb(clr)+',0.8);"></div>';
             // 碎片
             for(var k=0;k<30;k++){
@@ -1342,9 +1340,6 @@ var G = {
         var icons={cave:'🏔️ 洞府修炼',estate:'🏡 仙府洞天',sect:'🏯 宗门问道',wild:'🌲 荒郊野外',market:'🏪 坊市交易',dungeon:'💀 副本探险',secret:'✨ 秘境寻宝',arena:'⚔️ 竞技斗法'};
         var si=sp?sp.querySelector('.sp-inner'):null;
         if(si) si.textContent=icons[sc]||sc;
-        // 切换NPC小图标
-        var ni=document.getElementById('npcIcon');
-        if(ni) ni.className='npc-icon npc-icon-'+sc;
         document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('active');});
         var btns=document.querySelectorAll('.scn');
         btns.forEach(function(b){if(b.textContent.indexOf(this._scTxt(sc))>=0) b.classList.add('active');},this);
@@ -1403,7 +1398,8 @@ var G = {
             document.getElementById('pnlCave').innerHTML=h;
             break;
         case 'estate':
-            h=this._charHeader()+'<div style="font-size:0.8rem;color:#b7a17c;">仙府建造（提升永久属性）</div>';
+            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-estate.webp"></div>';
+            h+='<div style="font-size:0.8rem;color:#b7a17c;">仙府建造（提升永久属性）</div>';
             h+='<div class="build-card"><span>灵田 Lv.'+(this.s.es.hf||0)+' (自动产药)</span><div><button class="btn bs" onclick="G.harvHerb();G.save();">收获</button><button class="btn bs'+(this.s.es.hf>=4?'" disabled':'"')+' onclick="G.upgEs(\'hf\');G.save();">升级('+([100,250,500,1000][this.s.es.hf||0]||'满')+')</button></div></div>';
             h+='<div class="build-card"><span>丹房 Lv.'+(this.s.es.ar||0)+' (提升炼丹)</span><button class="btn bs" onclick="G.upgEs(\'ar\');G.save();">升级('+([150,350,700,1500][this.s.es.ar||0]||'满')+')</button></div>';
             h+='<div class="build-card"><span>聚灵阵 Lv.'+(this.s.es.sa||0)+' (+'+(this.s.es.sa||0)*10+'%修炼速度)</span><button class="btn bs" onclick="G.upgEs(\'sa\');G.save();">升级('+([200,500,1000,2000][this.s.es.sa||0]||'满')+')</button></div>';
@@ -1411,7 +1407,8 @@ var G = {
             document.getElementById('pnlEstate').innerHTML=h;
             break;
         case 'sect':
-            h=this._charHeader()+'<div style="font-size:0.85rem;">'+(this.s.sn?this.s.sn+'弟子':'散修')+'</div>';
+            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-sect.webp"></div>';
+            h+='<div style="font-size:0.85rem;">'+(this.s.sn?this.s.sn+'弟子':'散修')+'</div>';
             h+='<div style="font-size:0.75rem;">贡献 <span style="color:#ffd78b;">'+this.s.ctr+'</span></div>';
             h+='<div style="display:flex;gap:0.3rem;flex-wrap:wrap;">';
             h+='<button class="btn bs" onclick="G.sectTask();G.save();">任务</button>';
@@ -1426,7 +1423,8 @@ var G = {
             break;
         case 'wild':
             var mns=this.s.mons.map(function(m){return m.name+'(HP:'+m.hp+')';}).join(', ')||'无';
-            h=this._charHeader()+'<div class="card"><div><div>'+mns+'</div><div style="font-size:0.65rem;">总灵石+'+this.s.mrw+'</div></div><button class="btn dg" onclick="G.attackMon();G.save();">攻击(-3)</button></div>';
+            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-wild.webp"></div>';
+            h+='<div class="card"><div><div>'+mns+'</div><div style="font-size:0.65rem;">总灵石+'+this.s.mrw+'</div></div><button class="btn dg" onclick="G.attackMon();G.save();">攻击(-3)</button></div>';
             // Skill buttons for combat
             if(this.s.skls.length>0){
                 h+='<div class="skill-bar">';
@@ -1444,7 +1442,8 @@ var G = {
             document.getElementById('pnlWild').innerHTML=h;
             break;
         case 'market':
-            h=this._charHeader()+'<div style="font-size:0.72rem;color:#b7a17c;">消耗品</div><div class="cg">';
+            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-market.webp"></div>';
+            h+='<div style="font-size:0.72rem;color:#b7a17c;">消耗品</div><div class="cg">';
             h+='<div class="card"><span>破境丹 <small>('+this.s.bpu+'/3)</small></span><button class="btn bs" onclick="G.buyBp();G.save();">30灵石</button></div>';
             h+='<div class="card"><span>回灵丹</span><button class="btn bs" onclick="G.buySp();G.save();">15灵石</button></div>';
             h+='<div class="card"><span>寿元果(+8寿)</span><button class="btn bs" onclick="G.buyLf();G.save();">500灵石</button></div>';
@@ -1468,7 +1467,8 @@ var G = {
             document.getElementById('pnlMarket').innerHTML=h;
             break;
         case 'secret':
-            h=this._charHeader()+'<div style="text-align:center;font-size:0.8rem;color:#d4b868;">秘境探索（境界匹配制）</div>';
+            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-secret.webp"></div>';
+            h+='<div style="text-align:center;font-size:0.8rem;color:#d4b868;">秘境探索（境界匹配制）</div>';
             h+='<div style="font-size:0.65rem;color:#888;text-align:center;">越级碾压收益极微，挑战同级秘境为王道</div>';
             var self=this;
             this.SECRET_REALMS.forEach(function(sr,i){
