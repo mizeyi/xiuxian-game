@@ -278,14 +278,14 @@ var G = {
         {id:"daYan",name:"大衍诀",tier:"地",cv:0.6,atk:1.05,def:0.05,dunst:0,ssense:0.3,req:1,source:"秘境"},
         {id:"voidStep",name:"缩地成寸",tier:"天",cv:0.3,atk:0,def:0.05,dunst:0.4,ssense:0.1,req:3,source:"秘境"},
         {id:"soulRefine",name:"炼神术",tier:"天",cv:0.3,atk:0.05,def:0,hpMul:1.1,dunst:0,ssense:0.4,req:2,source:"秘境/竞技"},
-        {id:"chaosPrim",name:"混沌原始诀",tier:"天",cv:0.8,atk:1.1,def:0.1,dunst:0.2,ssense:0.2,req:4,source:"秘境/竞技"},
+        {id:"chaosPrim",name:"混沌原始诀",tier:"天",cv:0.8,atk:1.1,def:0.1,dunst:0.2,ssense:0.2,req:3,source:"秘境/竞技"},
     ],
-    // 功法获取权重（各途径），确保每池都有炼气期可掉落功法
+    // 功法池：每个境界确保每池至少2个可选功法
     techPools: {
         dg:["greenYuan","burningArt","starBody","swordSutra"],
         wd:["greenYuan","burningArt","iceHeart","daYan"],
         sc:["greenYuan","burningArt","iceHeart","daYan","voidStep","soulRefine"],
-        ar:["greenYuan","swordSutra","soulRefine","chaosPrim"],
+        ar:["greenYuan","burningArt","swordSutra","soulRefine","chaosPrim"],
     },
     PILLS: [
         {id:"baseElix",name:"筑基丹",desc:"突破率+",realmLvl:1,rwd:30,cost:150,mat:4},
