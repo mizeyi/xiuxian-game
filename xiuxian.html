@@ -988,6 +988,7 @@ var G = {
         }
         this._monsterRetaliate();
         if(!this.s.mons.length) this.genMons();
+        if(!this.cy(0.3)) return; // 战斗耗时
         this.updDaily('ft');this.refresh();
     },
     // 技能攻击野外怪物
@@ -1006,6 +1007,7 @@ var G = {
         }
         this._monsterRetaliate();
         if(!this.s.mons.length) this.genMons();
+        if(!this.cy(0.3)) return; // 战斗耗时
         this.updDaily('ft');this.refresh();
     },
     _monsterRetaliate: function(){
@@ -1206,24 +1208,27 @@ var G = {
             s.ss+=t.rwd;this.log("击败"+t.name+"！灵石+"+t.rwd);
             if(isB){
                 s.dc=(s.dc||0)+1;
-                var dg=this.DUNGEONS[s.di];
-                var diff=s.r-dg.realmLvl;
+                var dg2=this.DUNGEONS[s.di];
+                var diff=s.r-dg2.realmLvl;
                 var ddecay=diff<=0?1:Math.pow(0.2,diff);
-                var bRwd=Math.floor((dg.rwd*2+s.r*30)*ddecay);
+                var bRwd=Math.floor((dg2.rwd*2+s.r*30)*ddecay);
                 var extra='灵石+'+bRwd+(ddecay<1?'(衰减'+(ddecay*100).toFixed(0)+'%)':'');
-                var eq=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];
-                var item={t:eq.t,name:eq.name,atk:eq.atk||0,def:eq.def||0,hp:eq.hp||0};
-                s.inv.push(item);extra+=', '+eq.name;
-                s.hb+=Math.floor((2+this.rng(0,3))*ddecay);extra+=',药材+'+(2+this.rng(0,3));
-                s.bbrb=Math.min(100,s.bbrb+Math.floor(3*ddecay));extra+=',突破率+'+(Math.floor(3*ddecay))+'%';
-                s.lfb=(s.lfb||0)+Math.floor(2*ddecay);extra+=',寿元上限+'+Math.floor(2*ddecay);
-                s.ss+=bRwd;
-                if(ddecay>0.3&&this.ch(0.35*ddecay)){
-                    if(this._acquireTech(this.techPools.dg)) extra+=', 📖功法';
+                if(ddecay>=1){
+                    var eq=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];
+                    var item={t:eq.t,name:eq.name,atk:eq.atk||0,def:eq.def||0,hp:eq.hp||0};
+                    s.inv.push(item);extra+=', '+eq.name;
+                    s.hb+=2+this.rng(0,3);extra+=',药材+'+(2+this.rng(0,3));
+                    s.bbrb=Math.min(100,s.bbrb+3);extra+=',突破率+3%';
+                    s.lfb=(s.lfb||0)+2;extra+=',寿元上限+2';
+                    if(this.ch(0.4)){if(this._acquireTech(this.techPools.dg)) extra+=', 📖功法';}
+                }else{
+                    extra+='(境界碾压，仅灵石)';
                 }
-                this.log(dg.name+"通关！获得："+extra);
+                s.ss+=bRwd;
+                this.log(dg2.name+"通关！获得："+extra);
                 this.recalc();this.checkAch();
                 s.dboss=null;s.di=-1;
+                if(!this.cy(1.5)) return; // 副本耗时
                 this.recalc();this.refresh();
                 return;
             }
@@ -1253,24 +1258,27 @@ var G = {
             s.ss+=t.rwd;this.log("击败"+t.name+"！灵石+"+t.rwd);
             if(isB){
                 s.dc=(s.dc||0)+1;
-                var dg=this.DUNGEONS[s.di];
-                var diff=s.r-dg.realmLvl;
+                var dg2=this.DUNGEONS[s.di];
+                var diff=s.r-dg2.realmLvl;
                 var ddecay=diff<=0?1:Math.pow(0.2,diff);
-                var bRwd=Math.floor((dg.rwd*2+s.r*30)*ddecay);
+                var bRwd=Math.floor((dg2.rwd*2+s.r*30)*ddecay);
                 var extra='灵石+'+bRwd+(ddecay<1?'(衰减'+(ddecay*100).toFixed(0)+'%)':'');
-                var eq=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];
-                var item={t:eq.t,name:eq.name,atk:eq.atk||0,def:eq.def||0,hp:eq.hp||0};
-                s.inv.push(item);extra+=', '+eq.name;
-                s.hb+=Math.floor((2+this.rng(0,3))*ddecay);extra+=',药材+'+(2+this.rng(0,3));
-                s.bbrb=Math.min(100,s.bbrb+Math.floor(3*ddecay));extra+=',突破率+'+(Math.floor(3*ddecay))+'%';
-                s.lfb=(s.lfb||0)+Math.floor(2*ddecay);extra+=',寿元上限+'+Math.floor(2*ddecay);
-                s.ss+=bRwd;
-                if(ddecay>0.3&&this.ch(0.35*ddecay)){
-                    if(this._acquireTech(this.techPools.dg)) extra+=', 📖功法';
+                if(ddecay>=1){
+                    var eq=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];
+                    var item={t:eq.t,name:eq.name,atk:eq.atk||0,def:eq.def||0,hp:eq.hp||0};
+                    s.inv.push(item);extra+=', '+eq.name;
+                    s.hb+=2+this.rng(0,3);extra+=',药材+'+(2+this.rng(0,3));
+                    s.bbrb=Math.min(100,s.bbrb+3);extra+=',突破率+3%';
+                    s.lfb=(s.lfb||0)+2;extra+=',寿元上限+2';
+                    if(this.ch(0.4)){if(this._acquireTech(this.techPools.dg)) extra+=', 📖功法';}
+                }else{
+                    extra+='(境界碾压，仅灵石)';
                 }
-                this.log(dg.name+"通关！获得："+extra);
+                s.ss+=bRwd;
+                this.log(dg2.name+"通关！获得："+extra);
                 this.recalc();this.checkAch();
                 s.dboss=null;s.di=-1;
+                if(!this.cy(1.5)) return; // 副本耗时
                 this.recalc();this.refresh();
                 return;
             }
@@ -1334,6 +1342,7 @@ var G = {
             this.log(op.name+"反击，造成"+ed+"伤害");
             if(this.s.hp<=0){this.hpDeath();this.s.aopp=null;}
         }
+        if(!this.cy(0.3)) return; // 竞技耗时
         this.recalc();this.refresh();
     },
     arSkillFight: function(sid){
