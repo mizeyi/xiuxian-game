@@ -1426,6 +1426,19 @@ var G = {
             if(typeof this.s.hhc!=='number') this.s.hhc=0;
             if(typeof this.s.shld!=='number') this.s.shld=0;
             if(!this.s.pills||typeof this.s.pills!=='object') this.s.pills={};
+            // 迁移：清洗旧版"品品"重复key
+            var mig={};
+            Object.keys(this.s.pills).forEach(function(pid){
+                var entry=this.s.pills[pid];
+                if(typeof entry==='number'){mig[pid]=entry;return;} // 旧版直接数字计数
+                var clean={};
+                Object.keys(entry).forEach(function(gk){
+                    var fixed=gk.replace('品品','品'); // 修复重复"品"
+                    clean[fixed]=(clean[fixed]||0)+entry[gk];
+                });
+                mig[pid]=clean;
+            }.bind(this));
+            this.s.pills=mig;
             if(this.s.tech&&typeof this.s.tech!=='object') this.s.tech=null;
             if(!Array.isArray(this.s.techSkills)) this.s.techSkills=[];
             this.recalc();
@@ -1458,6 +1471,19 @@ var G = {
             if(typeof this.s.hhc!=='number') this.s.hhc=0;
             if(typeof this.s.shld!=='number') this.s.shld=0;
             if(!this.s.pills||typeof this.s.pills!=='object') this.s.pills={};
+            // 迁移：清洗旧版"品品"重复key
+            var mig={};
+            Object.keys(this.s.pills).forEach(function(pid){
+                var entry=this.s.pills[pid];
+                if(typeof entry==='number'){mig[pid]=entry;return;} // 旧版直接数字计数
+                var clean={};
+                Object.keys(entry).forEach(function(gk){
+                    var fixed=gk.replace('品品','品'); // 修复重复"品"
+                    clean[fixed]=(clean[fixed]||0)+entry[gk];
+                });
+                mig[pid]=clean;
+            }.bind(this));
+            this.s.pills=mig;
             if(this.s.tech&&typeof this.s.tech!=='object') this.s.tech=null;
             if(!Array.isArray(this.s.techSkills)) this.s.techSkills=[];
             this.recalc();
