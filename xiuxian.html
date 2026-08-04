@@ -451,7 +451,7 @@ var G = {
             achs:{},drs:0,dts:{},
             logs:["踏入仙途..."],evact:false,
             aopp:null,
-            auto:false,combo:false,lastSeen:Date.now(),
+            auto:false,autoEv:true,combo:false,lastSeen:Date.now(),
             // ===== v6 道途 + 轮回 =====
             daoTu:'san',                 // 当前道途: san/jian/dan/ti/zhen/fu
             jy:0,jz:0,fz:0,lm:0,         // 路径专属资源: 剑意/阵基/符纸/灵墨
@@ -796,10 +796,19 @@ var G = {
             {d:"仇敌跪地求饶",o:[{t:"饶恕(善业+)",a:function(){G.addKarma(7);G.log('放下执念');}},{t:"斩草除根(恶业+,魔道+)",a:function(){G.addKarma(-9);G.addFac('xie',5);G.log('恩怨了结');}}]}
         ]
     },
-    triggerEv: function(type){
-        this.s.evact=true;
+    EV_AUTO: { cv:[0,1,0,1,1,0], wd:[2,0,0,0,1], st:[1,0], sc:[1,1,1,1,0], kar:[1,1,1,1,0] },
+
+    triggerEv: function(type, autoMode){
         var pool=this.EVP[type]||this.EVP.cv;
-        var ev=pool[Math.floor(Math.random()*pool.length)];
+        var ei=Math.floor(Math.random()*pool.length);
+        var ev=pool[ei];
+        if(autoMode){
+            var map=this.EV_AUTO[type]||{};
+            var pick=ev.o[(map[ei]!=null)?map[ei]:0];
+            this.log('（挂机自动）'+ev.d+' → '+pick.t);
+            pick.a(); this.refresh(); this.save(); return;
+        }
+        this.s.evact=true;
         document.getElementById('evdesc').textContent=ev.d;
         var od=document.getElementById('evopts');od.innerHTML='';
         var self=this;
@@ -823,7 +832,7 @@ var G = {
         this.s.hp=Math.min(this.s.mhp,this.s.hp+Math.floor(this.s.mhp*0.03));
         if(!this.cy(0.5)) return;
         this.log("修炼 +"+g+"修为");
-        if(this.ch(0.18)) this.triggerEv('cv');
+        if(this.ch(0.18)) this.triggerEv('cv', this.s.auto && this.s.autoEv);
         if(this.ch(0.08)&&!this.s.par) this.createPartner();
         this.updDaily('cv');this.checkAch();this.refresh();
     },
@@ -1001,6 +1010,7 @@ var G = {
             var self=this;
             this._autoTimer=setInterval(function(){
                 if(!self.s.auto){clearInterval(self._autoTimer);self._autoTimer=null;return;}
+                if(self.s.evact) return;
                 if(self.s.sp<5||self.s.cv>=self.maxCv()){return;}
                 self.cultivate();
             },1500);
@@ -2251,6 +2261,7 @@ var G = {
             }
             // 自动修炼
             h+='<div class="auto-row"><span>自动修炼(挂机)</span><div class="toggle'+(this.s.auto?' on':'')+'" onclick="G.toggleAuto();G.save();"></div></div>';
+            h+='<div class="auto-row"><span>挂机自动处理事件</span><div class="toggle'+(this.s.autoEv?' on':'')+'" onclick="G.s.autoEv=!G.s.autoEv;G.save();G.refresh();"></div></div>';
             if(this.s.auto){
                 var apct=Math.min(100,(this.s.cv/this.maxCv())*100);
                 h+='<div class="cult-ring auto-pulse" style="--p:'+apct+'">'+Math.floor(apct)+'%<br>修为</div>';
