@@ -457,7 +457,16 @@ var G = {
             jy:0,jz:0,fz:0,lm:0,         // 路径专属资源: 剑意/阵基/符纸/灵墨
             jyLv:0,jzLv:0,fzLv:0,lmLv:0,tiLv:0, // 路径精通级(天花板加成, cap10)
             rootBonus:0,daoBonus:0,magBonus:0, // 轮回继承: 灵根资质/道天赋/寿元
-            meta:{lives:1,legacy:0,inherit:{},dead:false} // 轮回meta(跨世保留)
+            meta:{lives:1,legacy:0,inherit:{},dead:false}, // 轮回meta(跨世保留)
+            // ===== Wave2 秘境试炼 =====
+            my:0,                      // 秘境币(仅秘境产)
+            relCodex:{},               // 遗物图鉴(已解锁, 随轮回继承)
+            relBag:[],                 // 本局携带遗物(≤3)
+            run:null,                  // 秘境试炼当前局
+            // ===== Wave3 因果业力+势力 =====
+            karma:0,                   // 业力 -100~+100 (每世重置)
+            fac:{zheng:0,xie:0,zhong:0,san:0}, // 势力声望(每世重置)
+            wei:0                      // 威望根基(轮回继承, 影响声望起点)
         };
     },
 
@@ -494,6 +503,9 @@ var G = {
         if(s.daoTu==='ti'&&s.tiLv>0) s.mhp+=Math.round(s.mhp*s.tiLv*0.10); // v6 淬体精通(天花板)
         s._fuBurst=(s.daoTu==='fu')?Math.min(2.0,1+s.fzLv*0.04):1; // v6 符爆发倍率
         s._zhenEff=(s.daoTu==='zhen')?Math.min(1.6,1+s.jzLv*0.05):1; // v6 阵效率
+        var rb=this.relicBonus();                       // Wave2 遗物加成
+        if(rb.ba) s.ba=Math.floor(s.ba*(1+rb.ba));
+        if(rb.mhp) s.mhp=Math.floor(s.mhp*(1+rb.mhp));
         if(!isFinite(s.mhp)||s.mhp<=0) s.mhp=80;
         if(s.sp>s.msp) s.sp=s.msp;
         if(s.hp>s.mhp) s.hp=s.mhp;
@@ -519,6 +531,7 @@ var G = {
         m*=this.agePen();
         if(this.s.es.sa>0) m+=this.s.es.sa*0.1;
         if(this.s.es.tr>0) m+=this.s.es.tr*0.05;
+        m += this.relicCv();                           // Wave2 遗物修炼加成
         return Math.max(0.15,m);
     },
     cvGain: function(){return Math.floor((4+this.s.r*2.5)*(0.8+Math.random()*0.4)*this.cvMul());},
@@ -774,6 +787,13 @@ var G = {
             {d:"守护兽",o:[{t:"战斗(-15灵力)",a:function(){if(G.s.sp<15)return;G.s.sp-=15;G.s.hp=Math.max(0,G.s.hp-25);if(G.ch(0.5))G.s.ss+=60;if(G.s.hp<=0)G.hpDeath();}},{t:"逃跑",a:function(){G.rma(4);G.log("逃跑,寿限-4");}}]},
             {d:"仙人遗迹",o:[{t:"探索(+20,寿限-5)",a:function(){G.s.cv=Math.min(G.s.cv+20,G.maxCv());G.rma(5);G.log("探索遗迹");}},{t:"记录后离开(+6)",a:function(){G.s.cv=Math.min(G.s.cv+6,G.maxCv());}}]},
             {d:"天材地宝",o:[{t:"摘取(+5药材,+100灵石)",a:function(){G.s.hb+=5;G.s.ss+=100;}},{t:"守护(+80灵石)",a:function(){G.s.ss+=80;}}]}
+        ],
+        kar:[
+            {d:"路遇乞修求助",o:[{t:"施舍(-30灵石,善业+)",a:function(){if(G.s.ss>=30){G.s.ss-=30;G.addKarma(8);G.addFac('zheng',5);G.log('施恩积善');}}},{t:"无视",a:function(){G.log('漠然离去');}}]},
+            {d:"魔修邀你同流合污",o:[{t:"同流(恶业+,魔道声望+,攻+5)",a:function(){G.addKarma(-10);G.addFac('xie',6);G.s.ba+=5;G.recalc();G.log('沾染魔道');}},{t:"拒绝(善业+)",a:function(){G.addKarma(6);G.log('守心');}}]},
+            {d:"妖兽袭村",o:[{t:"相救(-20血,善业+,正道+)",a:function(){G.s.hp=Math.max(1,G.s.hp-20);G.addKarma(10);G.addFac('zheng',8);G.log('救民于水火');}},{t:"掠过(无动于衷)",a:function(){G.log('转身离去');}}]},
+            {d:"秘宝现世",o:[{t:"据为己有(恶业+,散修+)",a:function(){G.addKarma(-8);G.addFac('san',6);G.s.ss+=120;G.log('私藏秘宝');}},{t:"归公(善业+,正道+)",a:function(){G.addKarma(8);G.addFac('zheng',5);G.log('物归原主');}}]},
+            {d:"仇敌跪地求饶",o:[{t:"饶恕(善业+)",a:function(){G.addKarma(7);G.log('放下执念');}},{t:"斩草除根(恶业+,魔道+)",a:function(){G.addKarma(-9);G.addFac('xie',5);G.log('恩怨了结');}}]}
         ]
     },
     triggerEv: function(type){
@@ -861,7 +881,9 @@ var G = {
         var n=this.brNeed();
         if(this.s.cv<n){this.log("需"+n+"修为引动天劫");return;}
         this.s.cv-=n;
-        var ok=this.ch(this.brRate()/100);
+        var rate=Math.min(0.98, this.brRate()/100 + Math.max(0,this.s.karma)/100*0.1); // Wave3 善业加成突破率
+        var ok=this.ch(rate);
+        if(ok && this.s.karma<0 && this.ch(this.mindDemon())){ ok=false; this.log('心魔趁业障入侵，渡劫失守！'); }
         this.s.bbrb=0;
         this.s.usedPillAt={}; // 新境界可重新服用突破丹药
         // 展示渡劫动画
@@ -1330,6 +1352,128 @@ var G = {
         }else{var ss=Math.floor(sr.ss*0.6*decay);this.s.ss+=ss;this.log("感悟失败，灵石+"+ss);}
         if(!this.cy(0.7)) return;
         this.refresh();
+    },
+
+    // ===== Wave2 秘境试炼 (roguelite) =====
+    RELICS:[
+        {id:'jianxin',name:'剑心',tag:'jian',ba:0.10,desc:'剑修攻击+10%(他道减半)'},
+        {id:'danhun',name:'丹魂',tag:'dan',cv:0.10,desc:'丹修炼感+10%'},
+        {id:'tiegu',name:'铁骨',tag:'ti',mhp:0.12,desc:'体修气血+12%'},
+        {id:'zhenShu',name:'阵枢',tag:'zhen',cv:0.08,my:0.10,desc:'阵修效率+8%,秘境币+10%'},
+        {id:'fuling',name:'符灵',tag:'fu',burst:0.10,desc:'符修爆发+0.10'},
+        {id:'xuanyang',name:'玄阳',tag:'any',ba:0.05,mhp:0.05,desc:'攻+5% 血+5%'},
+        {id:'ningshen',name:'凝神',tag:'any',cv:0.06,desc:'修炼+6%'},
+        {id:'xueputi',name:'血菩提',tag:'ti',mhp:0.08,ba:0.04,desc:'血+8% 攻+4%'},
+        {id:'pozhang',name:'破障',tag:'jian',ba:0.08,desc:'剑修攻击+8%'},
+        {id:'yaowang',name:'药王',tag:'dan',cv:0.05,desc:'丹修炼感+5%'},
+        {id:'yufeng',name:'御风',tag:'any',cv:0.04,mhp:0.04,desc:'修炼+4% 血+4%'},
+        {id:'yehuo',name:'业火',tag:'xie',ba:0.12,desc:'魔道攻击+12%(他道减半)'}
+    ],
+    relicById: function(id){var r=this.RELICS.filter(function(x){return x.id===id;});return r[0];},
+    relicBonus: function(){
+        var s=this.s, self=this, out={ba:0,mhp:0,cv:0,my:0,burst:0};
+        (s.relBag||[]).forEach(function(id){
+            var r=self.relicById(id); if(!r) return;
+            var mul=(r.tag==='any'||r.tag===s.daoTu)?1:0.5; // 道途构筑: 他道减半
+            if(r.ba) out.ba+=r.ba*mul;
+            if(r.mhp) out.mhp+=r.mhp*mul;
+            if(r.cv) out.cv+=r.cv*mul;
+            if(r.my) out.my+=r.my*mul;
+            if(r.burst&&s.daoTu==='fu') out.burst+=r.burst;
+        });
+        return out;
+    },
+    relicCv: function(){
+        var s=this.s, self=this, add=0;
+        (s.relBag||[]).forEach(function(id){var r=self.relicById(id);if(!r)return;var mul=(r.tag==='any'||r.tag===s.daoTu)?1:0.5;if(r.cv)add+=r.cv*mul;});
+        return add;
+    },
+    // SECRET_REALMS 作为难度/主题层
+    secTrial: function(idx){
+        if(this.chkEv()) return;
+        var sr=this.SECRET_REALMS[idx];
+        if(!sr||this.s.r<sr.minR){this.log('境界不足');return;}
+        if(this.s.run){this.log('已有进行中的试炼');return;}
+        var depth=5+this.rng(0,3)+idx;                       // [PLACEHOLDER] 层数=5~7+tier
+        var layers=[];
+        for(var i=0;i<depth;i++){
+            var t=(i===depth-1)?'boss':(i===Math.floor(depth/2)?'elite':(this.ch(0.3)?'event':'fight'));
+            layers.push(t);
+        }
+        this.s.run={tier:idx,depth:depth,cur:0,layers:layers,rewards:0,pending:null};
+        this.log('进入'+sr.name+'试炼（'+depth+'层）');
+        this.cy(0.3);this.refresh();
+    },
+    secMonster: function(pow,type){
+        var atk=Math.floor(this.s.ba*pow*(type==='boss'?1.3:type==='elite'?1.1:0.9)); // [PLACEHOLDER]
+        return {name:type==='boss'?'秘境之主':type==='elite'?'秘境精英':'秘境守卫',atk:Math.max(1,atk),pow:pow};
+    },
+    secRunStep: function(){
+        var s=this.s, run=s.run; if(!run) return;
+        if(run.cur>=run.depth){ this.secEndRun(true); return; }
+        var tierMul=1+run.tier*0.15;                        // [PLACEHOLDER]
+        var pow=(1+0.15*run.cur)*tierMul;
+        var coin=Math.floor((run.cur+1)*8*tierMul);        // [PLACEHOLDER] 秘境币/层
+        var type=run.layers[run.cur];
+        if(type==='event'){ this.triggerEv('kar'); run.cur++; this.refresh(); return; }
+        var mon=this.secMonster(pow,type);
+        var win = s.ba>=mon.atk*1.2 ? true : (s.ba>mon.atk*0.6 ? this.ch(0.7) : this.ch(0.3));
+        if(win){
+            s.my+=coin; run.rewards+=coin;
+            s.hp=Math.max(1,s.hp-Math.floor(mon.atk*0.25));
+            if(type==='boss'||(type==='elite'&&this.ch(0.5))) this.secDropRelic();
+        }else{
+            s.hp-=mon.atk;
+            if(s.hp<=0){ this.log('秘境试炼陨落，未封存遗物散佚'); this.secEndRun(false); return; }
+        }
+        run.cur++; this.cy(0.3);this.refresh();
+    },
+    secDropRelic: function(){
+        var s=this.s;
+        var pool=this.RELICS.filter(function(r){return (s.relBag||[]).indexOf(r.id)<0 && !(s.relCodex&&s.relCodex[r.id]);});
+        if(pool.length===0){ s.my+=20; this.log('遗物已全收集，折算秘境币+20'); return; }
+        var r=pool[Math.floor(Math.random()*pool.length)];
+        if((s.relBag||[]).length<3){ s.relBag.push(r.id); this.recalc(); this.log('获得遗物【'+r.name+'】'); }
+        else { s.run.pending=r.id; this.log('遗物【'+r.name+'】待抉择(栏位已满)'); }
+        this.refresh();
+    },
+    secPickRelic: function(id){
+        var s=this.s; if((s.relBag||[]).length<3){ s.relBag.push(id); if(s.run&&s.run.pending===id)s.run.pending=null; this.recalc(); this.refresh(); }
+    },
+    secBank: function(id){ // 封存: 秘境币 sink, 永久入库
+        var s=this.s, cost=50; if(s.my<cost){this.log('秘境币不足(需'+cost+')');return;}
+        var i=(s.relBag||[]).indexOf(id); if(i<0) return;
+        s.my-=cost; s.relBag.splice(i,1); s.relCodex[id]=(s.relCodex[id]||0)+1;
+        this.recalc(); this.log('封存遗物【'+(this.relicById(id).name)+'】'); this.refresh();
+    },
+    secEndRun: function(success){
+        var s=this.s; if(!s.run) return;
+        if(success) this.log('秘境试炼通关！秘境币共+'+s.run.rewards);
+        s.run=null; this.recalc(); this.refresh();
+    },
+
+    // ===== Wave3 因果业力 + 势力 =====
+    addKarma: function(d){ this.s.karma=Math.max(-100,Math.min(100,this.s.karma+d)); },
+    addFac: function(f,d){ if(!this.s.fac[f])this.s.fac[f]=0; this.s.fac[f]=Math.max(0,Math.min(100,this.s.fac[f]+d)); },
+    karmaLabel: function(){
+        var k=this.s.karma;
+        if(k>0) return '<span style="color:#7be07b;">善'+k+'</span>';
+        if(k<0) return '<span style="color:#ff7b7b;">恶'+(-k)+'</span>';
+        return '<span style="color:#b7a17c;">中性0</span>';
+    },
+    mindDemon: function(){ return this.s.karma<0? Math.min(0.6, -this.s.karma/100*0.4):0; }, // [PLACEHOLDER] 心魔概率
+    FACTIONS:{
+        zheng:{name:'正道盟',items:[{n:'净化符',desc:'业力+15(洗恶)',cost:200,rep:10,ef:function(){G.addKarma(15);}},{n:'正气丹',desc:'突破率+5%',cost:400,rep:20,ef:function(){G.s.bbrb=Math.min(100,G.s.bbrb+5);}}]},
+        xie:{name:'魔道渊',items:[{n:'噬魂诀',desc:'恶业-10,攻+8',cost:200,rep:10,ef:function(){G.addKarma(-10);G.s.ba+=8;G.recalc();}},{n:'血祭符',desc:'攻击+15',cost:400,rep:20,ef:function(){G.s.ba+=15;G.recalc();}}]},
+        zhong:{name:'中立商会',items:[{n:'聚宝令',desc:'灵石+300',cost:300,rep:10,ef:function(){G.s.ss+=300;}},{n:'万货令',desc:'随机装备',cost:500,rep:20,ef:function(){var e=G.EQUIPS[Math.floor(Math.random()*G.EQUIPS.length)];G.addEq({t:e.t,name:e.name,atk:e.atk||0,def:e.def||0,hp:e.hp||0});}}]},
+        san:{name:'散修联盟',items:[{n:'自在诀',desc:'寿元+10',cost:250,rep:10,ef:function(){G.s.lfb=(G.s.lfb||0)+10;}},{n:'散修庇护',desc:'全体声望+5',cost:400,rep:20,ef:function(){G.addFac('zheng',5);G.addFac('xie',5);G.addFac('zhong',5);G.addFac('san',5);}}]}
+    },
+    facShop: function(fid,idx){
+        var f=this.FACTIONS[fid]; if(!f) return;
+        var it=f.items[idx]; if(!it) return;
+        if((this.s.fac[fid]||0)<it.rep){this.log('声望不足(需'+it.rep+')');return;}
+        if(this.s.ss<it.cost){this.log('灵石不足(需'+it.cost+')');return;}
+        this.s.ss-=it.cost; it.ef(); this.recalc(); this.refresh();
     },
 
     // ===== 仙府 =====
@@ -1881,9 +2025,11 @@ var G = {
         render();
     },
     _applyReincarnate: function(leg, pend){
-        var R=this.REINC, oldDao=this.s.daoTu, oldLives=this.s.meta.lives, self=this;
+        var R=this.REINC, oldDao=this.s.daoTu, oldLives=this.s.meta.lives, self=this, oldRel=this.s.relCodex||{};
         this.s=this.defState();
         this.s.meta={lives:oldLives+1, legacy:0, inherit:pend, dead:false};
+        this.s.relCodex=oldRel;                       // Wave2 遗物图鉴随轮回继承
+        this.s.wei=Math.floor(leg*0.02);              // Wave3 威望根基继承(声望起点)
         this.s.rootBonus=pend.root*R.rootStep;     // v6 继承: 灵根资质
         this.s.daoBonus=pend.dao*R.daoStep;         // v6 继承: 道天赋
         this.s.magBonus=pend.life*R.lifeAdd;        // v6 继承: 寿元
@@ -2033,7 +2179,7 @@ var G = {
         if(s.eq.ar) eqinfo+=' 🛡️'+s.eq.ar.name;
         if(s.pet) eqinfo+=' 🐾'+s.pet.nm;
         var rt=this.ROOTS[s.rt];
-        var h='<div class="scene-header-bar"><div class="avatar-box '+ac+'"></div><div style="font-size:0.75rem;"><b>'+s.pn+'</b> · '+this.REALMS[s.r].name+'【'+(this.DAOTU[s.daoTu]?this.DAOTU[s.daoTu].name:'')+'】<br><small style="color:'+(rt.mult>=1.5?'#ffd700':rt.mult>=1?'#c7b58a':'#7a6a8b')+';">'+rt.name+'('+rt.desc+')</small>'+(s.tech?'<small style="color:#80d0ff;"> | '+s.tech.name+'</small>':'')+'<br><small style="color:#b7a17c;">攻'+s.ba+' 防'+s.df+eqinfo+'</small></div></div>';
+        var h='<div class="scene-header-bar"><div class="avatar-box '+ac+'"></div><div style="font-size:0.75rem;"><b>'+s.pn+'</b> · '+this.REALMS[s.r].name+'【'+(this.DAOTU[s.daoTu]?this.DAOTU[s.daoTu].name:'')+'】<br><small style="color:'+(rt.mult>=1.5?'#ffd700':rt.mult>=1?'#c7b58a':'#7a6a8b')+';">'+rt.name+'('+rt.desc+')</small>'+(s.tech?'<small style="color:#80d0ff;"> | '+s.tech.name+'</small>':'')+'<br><small style="color:#b7a17c;">攻'+s.ba+' 防'+s.df+eqinfo+'</small><br><small style="color:#c9a0ff;">🔮'+s.my+' 秘境币 · 业力 '+this.karmaLabel()+'</small></div></div>';
         return h;
     },
 
@@ -2166,6 +2312,15 @@ var G = {
             h+='<button class="btn bs" onclick="G.sectEx(1);G.save();"'+(this.s.ctr<8?' disabled':'')+'>药材x3 (8)</button>';
             h+='<button class="btn bs" onclick="G.sectEx(2);G.save();"'+(this.s.ctr<15?' disabled':'')+'>随机装备 (15)</button>';
             h+='<button class="btn bs" onclick="G.sectEx(3);G.save();"'+(this.s.ctr<20?' disabled':'')+'>技能书 (20)</button></div>';
+            h+='<div style="font-size:0.72rem;color:#b7a17c;margin-top:0.3rem;">势力声望：</div><div class="cg">';
+            var self2=this;
+            ['zheng','xie','zhong','san'].forEach(function(fid){
+                var f=self2.FACTIONS[fid];
+                h+='<div class="card"><span>'+f.name+' <small>('+self2.s.fac[fid]+')</small></span>';
+                f.items.forEach(function(it,ii){ h+='<button class="btn bs" onclick="G.facShop(\''+fid+'\','+ii+');G.save();" '+(self2.s.fac[fid]<it.rep?'disabled':'')+'>'+it.n+'('+it.cost+')</button>'; });
+                h+='</div>';
+            });
+            h+='</div>';
             document.getElementById('pnlSect').innerHTML=h;
             break;
         case 'wild':
@@ -2221,22 +2376,31 @@ var G = {
             break;
         case 'secret':
             h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-secret.webp"></div>';
-            h+='<div style="text-align:center;font-size:0.8rem;color:#d4b868;">秘境探索（境界匹配制）</div>';
-            h+='<div style="font-size:0.65rem;color:#888;text-align:center;">越级碾压收益极微，挑战同级秘境为王道</div>';
             var self=this;
-            this.SECRET_REALMS.forEach(function(sr,i){
-                var diff=self.s.r-sr.minR;
-                var decay=diff<=0?1:Math.pow(0.15,diff);
-                var locked=self.s.r<sr.minR;
-                var style=diff===0?'pr':diff<0?'':'';
-                var label=locked?'🔒 需'+self.REALMS[sr.minR].name:decay>=0.5?(diff<=0?'同级·最优':'衰减'+(decay*100).toFixed(0)+'%'):'无价值';
-                var color=locked?'#666':decay>=0.8?'#ffe8a0':decay>=0.3?'#b7a17c':'#666';
-                h+='<div class="card"><span style="color:'+color+';">'+sr.name+' <small>(灵力-'+sr.cost+', 灵石~'+Math.floor(sr.ss*decay)+')</small></span>';
-                if(!locked&&decay>=0.01) h+='<button class="btn bs pr" onclick="G.secExp('+i+');G.save();">探索</button>';
-                else h+='<small style="color:#666;">'+label+'</small>';
-                h+='</div>';
-            });
-            h+='<div class="card"><span>感悟技能（消耗灵力1.5x）</span><button class="btn bs" onclick="G.secSkill('+this.s.r+');G.save();">感悟</button></div>';
+            if(this.s.run){
+                var run=this.s.run;
+                var lname={fight:'⚔️ 守卫',event:'❓ 机缘',elite:'💥 精英',boss:'👑 秘境之主'}[run.layers[run.cur]||'fight'];
+                h+='<div style="text-align:center;font-size:0.8rem;color:#d4b868;">秘境试炼 第 '+(run.cur+1)+'/'+run.depth+' 层</div>';
+                h+='<div style="font-size:0.65rem;color:#888;">秘境币 '+this.s.my+' · 携带遗物 '+(this.s.relBag.length)+'/3 · 图鉴 '+(Object.keys(this.s.relCodex).length)+'/'+this.RELICS.length+'</div>';
+                h+='<div class="card"><span>本层：'+lname+'</span><button class="btn bs pr" onclick="G.secRunStep();G.save();">深入一层</button></div>';
+                if(run.pending){ var pr=this.relicById(run.pending); h+='<div class="card"><span>待抉择遗物【'+pr.name+'】('+pr.desc+')</span><button class="btn bs" onclick="G.secPickRelic(\''+run.pending+'\');G.save();">携带</button><button class="btn bs" onclick="G.secBank(\''+run.pending+'\');G.save();">封存(50)</button></div>'; }
+                (this.s.relBag).forEach(function(id){var r=self.relicById(id);h+='<div class="card"><span>【'+r.name+'】'+r.desc+'</span><button class="btn bs" onclick="G.secBank(\''+id+'\');G.save();">封存(50)</button></div>';});
+                h+='<button class="btn" onclick="G.secEndRun(false);G.save();">放弃试炼</button>';
+            }else{
+                h+='<div style="text-align:center;font-size:0.8rem;color:#d4b868;">秘境试炼（roguelite）</div>';
+                h+='<div style="font-size:0.65rem;color:#888;text-align:center;">随机层·遗物构筑·死亡散佚未封存遗物</div>';
+                this.SECRET_REALMS.forEach(function(sr,i){
+                    var locked=self.s.r<sr.minR;
+                    h+='<div class="card"><span>'+sr.name+' <small>(难度'+i+')</small></span>';
+                    if(!locked) h+='<button class="btn bs pr" onclick="G.secTrial('+i+');G.save();">入秘境</button>';
+                    else h+='<small style="color:#666;">需'+self.REALMS[sr.minR].name+'</small>';
+                    h+='</div>';
+                });
+                h+='<div style="font-size:0.7rem;color:#b7a17c;margin-top:0.2rem;">秘境游历（稳妥，境界匹配）：</div>';
+                this.SECRET_REALMS.forEach(function(sr,i){ if(self.s.r>=sr.minR) h+='<div class="card"><span>'+sr.name+' 游历</span><button class="btn bs" onclick="G.secExp('+i+');G.save();">游历</button></div>'; });
+                h+='<div class="card"><span>图鉴 '+(Object.keys(this.s.relCodex).length)+'/'+this.RELICS.length+' · 秘境币 '+this.s.my+'</span></div>';
+                h+='<button class="btn bs" onclick="G.triggerEv(\'kar\');G.save();">历练因果</button>';
+            }
             document.getElementById('pnlSecret').innerHTML=h;
             break;
         }
