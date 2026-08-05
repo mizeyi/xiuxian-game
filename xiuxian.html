@@ -287,7 +287,7 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 var G = {
     SAVE_KEY: 'xiuxian_v23',
     MANUAL_KEY: 'xiuxian_v23_manual',
-    VER: '8.1.1',   // 游戏内置版本号；部署时由 _push.js 提取写入 version.json，启动时比对远端实现免硬刷更新
+    VER: '8.1.2',   // 游戏内置版本号；部署时由 _push.js 提取写入 version.json，启动时比对远端实现免硬刷更新
     
     REALMS: [
         {name:"炼气期",atkMul:2,spiritMax:100,lifeBonus:20,hpBase:80,subCost:[60,100]},
@@ -457,7 +457,10 @@ var G = {
             // ===== Wave2 秘境试炼 =====
             my:0,                      // 秘境币(仅秘境产)
             relCodex:{},               // 遗物图鉴(已解锁, 随轮回继承)
-            relBag:[],                 // 本局携带遗物(≤3)
+            relBag:[],                 // 本局携带遗物(≤secSlots)
+            secSlots:3,                // 遗物栏上限(可扩容 3→5)
+            secBless:{},               // 秘境祝福等级(永久, 类FA但my消费)
+            secLost:[],                // 陨落散佚的遗物(可用my赎回)
             run:null,                  // 秘境试炼当前局
             // ===== Wave3 因果业力+势力 =====
             karma:0,                   // 业力 -100~+100 (每世重置)
@@ -1453,6 +1456,12 @@ var G = {
         {id:'yufeng',name:'御风',tag:'any',cv:0.04,mhp:0.04,desc:'修炼+4% 血+4%'},
         {id:'yehuo',name:'业火',tag:'xie',ba:0.12,desc:'魔道攻击+12%(他道减半)'}
     ],
+    SEC_SHOP:{  // 秘境不朽坊: my(秘境币) 消费出口 + 永久meta成长
+        fengrao:{name:'丰饶',desc:'秘境币获取+8%/级',max:5},
+        jianbi:{name:'坚壁',desc:'秘境试炼受伤-10%/级',max:5},
+        shiyi:{name:'拾遗',desc:'秘境试炼遗物掉率+10%/级',max:3},
+        tongyou:{name:'通幽',desc:'秘境试炼层数+1/级',max:2}
+    },
     relicById: function(id){var r=this.RELICS.filter(function(x){return x.id===id;});return r[0];},
     relicBonus: function(){
         var s=this.s, self=this, out={ba:0,mhp:0,cv:0,my:0,burst:0};
@@ -1478,7 +1487,7 @@ var G = {
         var sr=this.SECRET_REALMS[idx];
         if(!sr||this.s.r<sr.minR){this.log('境界不足');return;}
         if(this.s.run){this.log('已有进行中的试炼');return;}
-        var depth=5+this.rng(0,3)+idx;                       // [PLACEHOLDER] 层数=5~7+tier
+        var depth=5+this.rng(0,3)+idx+this.secBlessDepth();  // [PLACEHOLDER] 层数=5~7+tier+通幽
         var layers=[];
         for(var i=0;i<depth;i++){
             var t=(i===depth-1)?'boss':(i===Math.floor(depth/2)?'elite':(this.ch(0.3)?'event':'fight'));
@@ -1497,7 +1506,7 @@ var G = {
         if(run.cur>=run.depth){ this.secEndRun(true); return; }
         var tierMul=1+run.tier*0.15;                        // [PLACEHOLDER]
         var pow=(1+0.15*run.cur)*tierMul;
-        var coin=Math.floor((run.cur+1)*8*tierMul);        // [PLACEHOLDER] 秘境币/层
+        var coin=Math.floor((run.cur+1)*8*tierMul*(1+this.secBlessCoin())); // [PLACEHOLDER] 秘境币/层×(1+丰饶)
         var type=run.layers[run.cur];
         if(type==='event'){ this.triggerEv('kar'); run.cur++; this.refresh(); return; }
         var mon=this.secMonster(pow,type);
@@ -1505,10 +1514,10 @@ var G = {
         if(win){
             s.my+=coin; run.rewards+=coin;
             s.hp=Math.max(1,s.hp-Math.floor(mon.atk*0.25));
-            if(type==='boss'||(type==='elite'&&this.ch(0.5))) this.secDropRelic();
+            if(type==='boss'||(type==='elite'&&this.ch(0.5))||this.ch(this.secBlessDrop())) this.secDropRelic(); // 拾遗: 普通层也可掉
             if(s.r>=7) s.fa += (type==='boss'? this.rng(6,12): this.rng(3,7)); // v8.0 飞升后秘境高层掉法则点
         }else{
-            s.hp-=Math.floor(mon.atk*(1+this.faSharpNeg())*(1-this.faRed())); // v8.0 锋锐副作用受击+/不灭减伤
+            s.hp-=Math.floor(mon.atk*(1+this.faSharpNeg())*(1-this.faRed())*(1-this.secBlessRed())); // 坚壁: 试炼减伤
             if(s.hp<=0){ this.log('秘境试炼陨落，未封存遗物散佚'); this.secEndRun(false); return; }
         }
         run.cur++; this.cy(0.3);this.refresh();
@@ -1518,12 +1527,12 @@ var G = {
         var pool=this.RELICS.filter(function(r){return (s.relBag||[]).indexOf(r.id)<0 && !(s.relCodex&&s.relCodex[r.id]);});
         if(pool.length===0){ s.my+=20; this.log('遗物已全收集，折算秘境币+20'); return; }
         var r=pool[Math.floor(Math.random()*pool.length)];
-        if((s.relBag||[]).length<3){ s.relBag.push(r.id); this.recalc(); this.log('获得遗物【'+r.name+'】'); }
+        if((s.relBag||[]).length<(s.secSlots||3)){ s.relBag.push(r.id); this.recalc(); this.log('获得遗物【'+r.name+'】'); }
         else { s.run.pending=r.id; this.log('遗物【'+r.name+'】待抉择(栏位已满)'); }
         this.refresh();
     },
     secPickRelic: function(id){
-        var s=this.s; if((s.relBag||[]).length<3){ s.relBag.push(id); if(s.run&&s.run.pending===id)s.run.pending=null; this.recalc(); this.refresh(); }
+        var s=this.s; if((s.relBag||[]).length<(s.secSlots||3)){ s.relBag.push(id); if(s.run&&s.run.pending===id)s.run.pending=null; this.recalc(); this.refresh(); }
     },
     secBank: function(id){ // 封存: 秘境币 sink, 永久入库
         var s=this.s, cost=50; if(s.my<cost){this.log('秘境币不足(需'+cost+')');return;}
@@ -1533,9 +1542,23 @@ var G = {
     },
     secEndRun: function(success){
         var s=this.s; if(!s.run) return;
-        if(success) this.log('秘境试炼通关！秘境币共+'+s.run.rewards);
+        if(success){ this.log('秘境试炼通关！秘境币共+'+s.run.rewards); }
+        else {
+            if((s.relBag||[]).length){ s.secLost=(s.secLost||[]).concat(s.relBag); s.relBag=[]; this.log('陨落！未封存遗物散佚 '+s.secLost.length+' 件（秘境不朽坊可赎回）'); }
+            else this.log('秘境试炼失败');
+        }
         s.run=null; this.recalc(); this.refresh();
     },
+    // ===== Wave3.5 秘境不朽坊 (my sink + 永久meta成长) =====
+    _secBlessCost: function(id){var lv=this.s.secBless[id]||0;return Math.floor(25*Math.pow(1.6,lv));}, // [PLACEHOLDER] my比fa易得, 首级25
+    _secSlotCost: function(){var cur=this.s.secSlots||3;return cur>=5?0:(cur===3?100:250);}, // [PLACEHOLDER] 100/250 扩至5栏
+    secBless: function(id){var f=this.SEC_SHOP[id];if(!f)return;var lv=this.s.secBless[id]||0;if(lv>=f.max){this.log('祝福已至满级');return;}var cost=this._secBlessCost(id);if(this.s.my<cost){this.log('秘境币不足(需'+cost+')');return;}this.s.my-=cost;this.s.secBless[id]=lv+1;this.recalc();this.log('铭刻秘境祝福【'+f.name+'】Lv.'+(lv+1));this.refresh();},
+    secBuySlot: function(){var cost=this._secSlotCost();if(!cost){this.log('遗物栏已满(5)');return;}if(this.s.my<cost){this.log('秘境币不足(需'+cost+')');return;}this.s.my-=cost;this.s.secSlots++;this.recalc();this.log('遗物栏扩容至'+this.s.secSlots);this.refresh();},
+    secBlessCoin: function(){return (this.s.secBless.fengrao||0)*0.08;},     // 丰饶: 试炼币+
+    secBlessRed:  function(){return Math.min(0.5,(this.s.secBless.jianbi||0)*0.10);}, // 坚壁: 试炼减伤
+    secBlessDrop: function(){return Math.min(0.4,(this.s.secBless.shiyi||0)*0.10);},  // 拾遗: 遗物掉率+
+    secBlessDepth:function(){return (this.s.secBless.tongyou||0);},         // 通幽: 试炼层数+
+    secRedeem: function(){var lost=this.s.secLost||[];if(!lost.length){this.log('无散佚遗物');return;}var cost=30*lost.length; if(this.s.my<cost){this.log('秘境币不足(需'+cost+', '+lost.length+'件×30)');return;}this.s.my-=cost;var self=this;lost.forEach(function(id){if((self.s.relBag.length)<(self.s.secSlots||3)){self.s.relBag.push(id);}else{self.s.relCodex[id]=(self.s.relCodex[id]||0)+1;}});this.s.secLost=[];this.recalc();this.log('赎回散佚遗物'+lost.length+'件(耗'+cost+'秘境币)');this.refresh();},
 
     // ===== Wave3 因果业力 + 势力 =====
     addKarma: function(d){ this.s.karma=Math.max(-100,Math.min(100,this.s.karma+d)); },
@@ -2571,7 +2594,7 @@ var G = {
                 var run=this.s.run;
                 var lname={fight:'⚔️ 守卫',event:'❓ 机缘',elite:'💥 精英',boss:'👑 秘境之主'}[run.layers[run.cur]||'fight'];
                 h+='<div style="text-align:center;font-size:0.8rem;color:#d4b868;">秘境试炼 第 '+(run.cur+1)+'/'+run.depth+' 层</div>';
-                h+='<div style="font-size:0.65rem;color:#888;">秘境币 '+this.s.my+' · 携带遗物 '+(this.s.relBag.length)+'/3 · 图鉴 '+(Object.keys(this.s.relCodex).length)+'/'+this.RELICS.length+'</div>';
+                h+='<div style="font-size:0.65rem;color:#888;">秘境币 '+this.s.my+' · 携带遗物 '+(this.s.relBag.length)+'/'+(this.s.secSlots||3)+' · 图鉴 '+(Object.keys(this.s.relCodex).length)+'/'+this.RELICS.length+'</div>';
                 h+='<div class="card"><span>本层：'+lname+'</span><button class="btn bs pr" onclick="G.secRunStep();G.save();">深入一层</button></div>';
                 if(run.pending){ var pr=this.relicById(run.pending); h+='<div class="card"><span>待抉择遗物【'+pr.name+'】('+pr.desc+')</span><button class="btn bs" onclick="G.secPickRelic(\''+run.pending+'\');G.save();">携带</button><button class="btn bs" onclick="G.secBank(\''+run.pending+'\');G.save();">封存(50)</button></div>'; }
                 (this.s.relBag).forEach(function(id){var r=self.relicById(id);h+='<div class="card"><span>【'+r.name+'】'+r.desc+'</span><button class="btn bs" onclick="G.secBank(\''+id+'\');G.save();">封存(50)</button></div>';});
@@ -2589,6 +2612,15 @@ var G = {
                 h+='<div style="font-size:0.7rem;color:#b7a17c;margin-top:0.2rem;">秘境游历（稳妥，境界匹配）：</div>';
                 this.SECRET_REALMS.forEach(function(sr,i){ if(self.s.r>=sr.minR) h+='<div class="card"><span>'+sr.name+' 游历</span><button class="btn bs" onclick="G.secExp('+i+');G.save();">游历</button></div>'; });
                 h+='<div class="card"><span>图鉴 '+(Object.keys(this.s.relCodex).length)+'/'+this.RELICS.length+' · 秘境币 '+this.s.my+'</span></div>';
+                // ===== 秘境不朽坊 (my消费出口) =====
+                h+='<div style="font-size:0.72rem;color:#d4b868;margin-top:0.35rem;">🏛️ 秘境不朽坊 <small style="color:#9a8ab5;">秘境币换永久成长</small></div>';
+                var slotCost=self._secSlotCost();
+                h+='<div class="card" style="border-color:#6a5a8b;"><span>遗物栏 '+(self.s.secSlots||3)+'/5'+(slotCost?'':' (已满)')+'</span>'+(slotCost?'<button class="btn bs" onclick="G.secBuySlot();G.save();">扩容('+slotCost+')</button>':'')+'</div>';
+                Object.keys(self.SEC_SHOP).forEach(function(bid){
+                    var f=self.SEC_SHOP[bid], lv=self.s.secBless[bid]||0, maxed=lv>=f.max, cost=self._secBlessCost(bid);
+                    h+='<div class="card" style="border-color:#6a5a8b;"><span>'+f.name+' <b>Lv.'+lv+'/'+f.max+'</b> <small>'+f.desc+'</small></span>'+(maxed?'<small style="color:#666;">满级</small>':'<button class="btn bs" onclick="G.secBless(\''+bid+'\');G.save();">铭刻('+cost+')</button>')+'</div>';
+                });
+                if((self.s.secLost||[]).length){ var rc=30*self.s.secLost.length; h+='<div class="card" style="border-color:#c88;"><span>💀 遗物散佚 '+self.s.secLost.length+' 件</span><button class="btn bs" onclick="G.secRedeem();G.save();">赎回('+rc+')</button></div>'; }
                 h+='<button class="btn bs" onclick="G.triggerEv(\'kar\');G.save();">历练因果</button>';
             }
             document.getElementById('pnlSecret').innerHTML=h;
