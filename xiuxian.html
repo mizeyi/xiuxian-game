@@ -56,6 +56,10 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
     background:#2e2838;border-radius:0.7rem;padding:0.4rem 0.5rem;border:1px solid #9a7850;
     display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.3rem;font-size:0.72rem;
 }
+.res-row{
+    background:#241f30;border-radius:0.6rem;padding:0.35rem 0.5rem;border:1px solid #4a3f5e;
+    font-size:0.7rem;color:#cdbfe0;display:flex;flex-wrap:wrap;gap:0.35rem;justify-content:center;
+}
 .cg{display:grid;grid-template-columns:1fr 1fr;gap:0.3rem;}
 .logbox{
     background:#1c2030;border-radius:0.6rem;padding:0.4rem;height:70px;flex-shrink:0;
@@ -283,7 +287,7 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 var G = {
     SAVE_KEY: 'xiuxian_v23',
     MANUAL_KEY: 'xiuxian_v23_manual',
-    VER: '8.0.4',   // 游戏内置版本号；部署时由 _push.js 提取写入 version.json，启动时比对远端实现免硬刷更新
+    VER: '8.1',   // 游戏内置版本号；部署时由 _push.js 提取写入 version.json，启动时比对远端实现免硬刷更新
     
     REALMS: [
         {name:"炼气期",atkMul:2,spiritMax:100,lifeBonus:20,hpBase:80,subCost:[60,100]},
@@ -328,15 +332,22 @@ var G = {
         {id:"starBody",name:"星辰炼体术",tier:"地",cv:0.2,atk:0,def:0.25,hpMul:1.2,dunst:0,ssense:0,req:1,source:"副本"},
         {id:"daYan",name:"大衍诀",tier:"地",cv:0.6,atk:1.05,def:0.05,dunst:0,ssense:0.3,req:1,source:"秘境"},
         {id:"voidStep",name:"缩地成寸",tier:"天",cv:0.3,atk:0,def:0.05,dunst:0.4,ssense:0.1,req:3,source:"秘境"},
-        {id:"soulRefine",name:"炼神术",tier:"天",cv:0.3,atk:0.05,def:0,hpMul:1.1,dunst:0,ssense:0.4,req:2,source:"秘境/竞技"},
+        {id:"soulRefine",name:"炼神术",tier:"天",cv:0.3,atk:0.18,def:0,hpMul:1.1,dunst:0,ssense:0.4,req:2,source:"秘境/竞技"},
         {id:"chaosPrim",name:"混沌原始诀",tier:"天",cv:0.8,atk:1.1,def:0.1,dunst:0.2,ssense:0.2,req:3,source:"秘境/竞技"},
+        // v8.1 扩充功法池：覆盖 攻/防/速/养 不同玩家决策
+        {id:"taixu",name:"太虚养神诀",tier:"天",cv:0.45,atk:0,def:0.05,hpMul:1.15,dunst:0,ssense:0.5,req:3,source:"秘境"},
+        {id:"jiuzhuan",name:"九转玄功",tier:"地",cv:0.35,atk:0.2,def:0.1,hpMul:1.1,dunst:0,ssense:0,req:1,source:"副本/云游"},
+        {id:"xuesha",name:"血煞功",tier:"玄",cv:-0.05,atk:1.5,def:0,hpMul:0.95,dunst:0,ssense:0,req:0,source:"副本/竞技"},
+        {id:"xuanwu",name:"玄武罡气",tier:"地",cv:0.15,atk:0,def:0.3,hpMul:1.25,dunst:0,ssense:0.1,req:2,source:"副本"},
+        {id:"fengying",name:"风影遁法",tier:"玄",cv:0.2,atk:0,def:0.05,dunst:0.5,ssense:0,req:1,source:"云游/秘境"},
+        {id:"wanxiang",name:"万象森罗诀",tier:"天",cv:0.5,atk:0.15,def:0.1,hpMul:1.1,dunst:0.2,ssense:0.2,req:4,source:"秘境/竞技"},
     ],
     // 功法池：每个境界确保每池至少2个可选功法
     techPools: {
-        dg:["greenYuan","burningArt","starBody","swordSutra"],
-        wd:["greenYuan","burningArt","iceHeart","daYan"],
-        sc:["greenYuan","burningArt","iceHeart","daYan","voidStep","soulRefine"],
-        ar:["greenYuan","burningArt","swordSutra","soulRefine","chaosPrim"],
+        dg:["greenYuan","burningArt","starBody","swordSutra","xuesha","jiuzhuan","xuanwu"],
+        wd:["greenYuan","burningArt","iceHeart","daYan","jiuzhuan","fengying"],
+        sc:["greenYuan","burningArt","iceHeart","daYan","voidStep","soulRefine","taixu","wanxiang"],
+        ar:["greenYuan","burningArt","swordSutra","soulRefine","chaosPrim","xuesha","wanxiang"],
     },
     PILLS: [
         {id:"baseElix",name:"筑基丹",desc:"突破率+",realmLvl:1,rwd:30,cost:150,mat:4},
@@ -466,6 +477,7 @@ var G = {
         (eq.rg||[]).forEach(function(a){if(a){var e2=a.enh||0;atk+=Math.round((a.atk||0)*(1+e2*0.12));df+=Math.round((a.def||0)*(1+e2*0.12));}});
         s.ba=Math.floor(Math.max(1,atk));
         s.df=Math.floor(df);
+        if(s.pet){ s.ba+=this.petAtk(); s.df+=this.petDef()*2; } // v8.1 灵宠助战：攻击/护主防御常驻(recCalc 内，HUD 可见)
         // 功法加成
         if(s.tech){
             if(s.tech.atk) s.ba=Math.floor(s.ba*s.tech.atk);
@@ -482,7 +494,7 @@ var G = {
         s.mhp=Math.floor(rm.hpBase*(1+s.sr*0.12));
         (eq.rg||[]).forEach(function(a){if(a&&a.hp){var e2=a.enh||0;s.mhp+=Math.round(a.hp*(1+e2*0.12));}});
         if(eq.ar&&eq.ar.hp){var e1=eq.ar.enh||0;s.mhp+=Math.round(eq.ar.hp*(1+e1*0.12));}
-        if(s.pet) s.mhp+=s.pet.evo? s.pet.evoHp:s.pet.hp;
+        if(s.pet) s.mhp+=this.petHp(); // v8.1 走 petHp 派生(含等级成长)
         if(s.tech&&s.tech.hpMul) s.mhp=Math.floor(s.mhp*s.tech.hpMul);
         if(dt.mhpFloor&&dt.mhpFloor!==1) s.mhp=Math.floor(s.mhp*dt.mhpFloor); // v6 道途战力地板
         if(s.daoTu==='ti'&&s.tiLv>0) s.mhp+=Math.round(s.mhp*s.tiLv*0.10); // v6 淬体精通(天花板)
@@ -500,6 +512,14 @@ var G = {
         if(!isFinite(s.mag)||s.mag<=0) s.mag=100;
         if(s.ag>s.mag) s.ag=s.mag;
     },
+
+    // v8.1 灵宠派生属性（含等级成长，常驻计入 recalc；旧版仅在战斗内临时加，高境界近乎为0）
+    petAtk: function(){var p=this.s.pet;if(!p)return 0;var b=p.evo?p.evoAtk:p.atk;return Math.floor(b+(p.lv-1)*5);},
+    petDef: function(){var p=this.s.pet;if(!p)return 0;var b=p.evo?p.evoDef:p.def;return Math.floor(b+(p.lv-1)*4);},
+    petHp:  function(){var p=this.s.pet;if(!p)return 0;var b=p.evo?p.evoHp:p.hp;return Math.floor(b+(p.lv-1)*40);},
+    // v8.1 功法神识/遁速派生（乘区，与面板显示一致；旧版 tech.ssense/dunst 定义却从未生效）
+    effSsense: function(){return Math.floor((this.s.ssense||0)*(1+((this.s.tech&&this.s.tech.ssense)||0)));},
+    effDunst: function(){return Math.floor((this.s.dunst||0)*(1+((this.s.tech&&this.s.tech.dunst)||0)));},
 
     subCost: function(){var s=this.s;return s.sr>=2?1e99:this.REALMS[s.r].subCost[s.sr];},
     brNeed: function(){return Math.floor(this.REALMS[this.s.r].subCost[1]*1.5);},
@@ -661,21 +681,21 @@ var G = {
         var t=G.PETS[Math.floor(Math.random()*G.PETS.length)];
         this.s.ss-=200;
         this.s.pet={nm:t.name,atk:t.atk,def:t.def,hp:t.hp,lv:1,exp:0,evo:false,evoLv:t.evoLv,evoName:t.evoName,evoAtk:t.evoAtk,evoDef:t.evoDef,evoHp:t.evoHp};
-        this.log("获得灵宠【"+t.name+"】");
+        this.recalc();this.log("获得灵宠【"+t.name+"】 助战：攻+"+this.petAtk()+" 护+"+(this.petDef()*2)+" 血+"+this.petHp());
         this.recalc();this.checkAch();this.refresh();
     },
     feedPet: function(){
         if(!this.s.pet){this.log("没有灵宠");return;}
         if(this.s.ss<10){this.log("灵石不足");return;}
         this.s.ss-=10;this.s.pet.exp+=this.rng(8,15);
-        if(this.s.pet.exp>=this.s.pet.lv*20&&!this.s.pet.evo&&this.s.pet.lv>=this.s.pet.evoLv){
-            this.s.pet.evo=true;this.s.pet.nm=this.s.pet.evoName;
-            this.s.pet.atk=this.s.pet.evoAtk;this.s.pet.def=this.s.pet.evoDef;this.s.pet.hp=this.s.pet.evoHp;
-            this.log("灵宠进化！【"+this.s.pet.evoName+"】");this.checkAch();
-        }else if(this.s.pet.exp>=this.s.pet.lv*20){
-            this.s.pet.lv++;this.s.pet.exp=0;
-            this.s.pet.atk+=2;this.s.pet.def+=1;this.s.pet.hp+=10;
-            this.log("灵宠升级至Lv."+this.s.pet.lv);
+        var p=this.s.pet;
+        if(p.exp>=p.lv*20&&!p.evo&&p.lv>=p.evoLv){
+            p.evo=true;p.nm=p.evoName; // v8.1 进化仅置标志，属性由 petAtk/Def/Hp 派生
+            this.log("🌟灵宠进化！【"+p.evoName+"】 助战：攻+"+this.petAtk()+" 护+"+(this.petDef()*2)+" 血+"+this.petHp());
+            this.checkAch();
+        }else if(p.exp>=p.lv*20){
+            p.lv++;p.exp=0; // v8.1 等级成长由派生函数计算，不再手动改 atk/def/hp
+            this.log("灵宠升级至Lv."+p.lv+" 助战：攻+"+this.petAtk()+" 护+"+(this.petDef()*2)+" 血+"+this.petHp());
         }
         this.recalc();this.refresh();
     },
@@ -1130,7 +1150,7 @@ var G = {
         this.s.ss-=p.cost;this.s.hb-=p.mat;
         if(!this.s.pills) this.s.pills={};
         // 丹药品级：神识越高，出高品概率越大
-        var sc=this.s.ssense||0;
+        var sc=this.effSsense(); // v8.1 功法神识加成生效
         var r=Math.random()+sc*0.003;
         var grade=r>0.9?'极品':r>0.7?'上品':r>0.5?'中品':'下品';
         var mult={下品:0.5,中品:1.0,上品:1.3,极品:1.8};
@@ -1140,6 +1160,19 @@ var G = {
         var eff=Math.floor(p.rwd*mult[grade]);
         this.log("炼制"+grade+p.name+"，突破率+"+eff+"%");
         this.refresh();
+    },
+    // v8.1 一键炼丹：药材→修为（药材新 sink）。每药材≈3次修炼量，灵石消耗随批；比例 [PLACEHOLDER] 待 playtest
+    alchemyCv: function(){
+        var s=this.s; var per=5;
+        if(s.hb<1){this.log("没有药材");return;}
+        var n=Math.min(per,s.hb);
+        var cost=Math.floor(n*6);
+        if(s.ss<cost){this.log("需"+cost+"灵石");return;}
+        s.hb-=n; s.ss-=cost;
+        var gain=Math.floor(this.cvGain()*3*n);
+        s.cv=Math.min(s.cv+gain,this.maxCv());
+        this.log("🍵炼丹化修为：耗药材"+n+"+灵石"+cost+"，修为+"+gain);
+        this.recalc();this.refresh();
     },
     usePill: function(pid,grade){
         var p=this.PILLS[pid];
@@ -1224,7 +1257,7 @@ var G = {
         var items=[
             {n:"灵石x50",c:5,a:function(){G.s.ss+=50;}},
             {n:"药材x3",c:8,a:function(){G.s.hb+=3;}},
-            {n:"随机装备",c:15,a:function(){var e=G.EQUIPS[Math.floor(Math.random()*G.EQUIPS.length)];G.addEq({t:e.t,name:e.name,atk:e.atk||0,def:e.def||0,hp:e.hp||0});}},
+            {n:"随机装备",c:15,a:function(){var e=G.EQUIPS[Math.floor(Math.random()*G.EQUIPS.length)];var it={t:e.t,name:e.name,atk:e.atk||0,def:e.def||0,hp:e.hp||0};G.s.inv.push(it);G.log("获得"+it.name+"，已入背包（装备管理手动穿戴）");}},
             {n:"技能书",c:20,a:function(){var sk=G.SKILLS[Math.floor(Math.random()*G.SKILLS.length)];if(G.s.skls.indexOf(sk.id)<0)G.learnSkill(sk.id);else{G.s.ss+=20;G.log("已会,退款20灵石");}}}
         ];
         if(idx<0||idx>=items.length) return;
@@ -1240,7 +1273,6 @@ var G = {
         if(this.s.sp<3){this.log("灵力不足");return;}
         this.s.sp-=3; this._tickSkillCDs(); this._tickCooldowns();
         var dmg=Math.floor(this.s.ba*(0.9+Math.random()*0.5));
-        if(this.s.pet) dmg+=Math.floor((this.s.pet.evo?this.s.pet.evoAtk:this.s.pet.atk)*1.0);
         var t=this.s.mons[Math.floor(Math.random()*this.s.mons.length)];
         t.hp-=dmg;this._pushFx('enemy',dmg,false);this.log("攻击"+t.name+"，"+dmg+"伤害");
         if(t.hp<=0){
@@ -1281,8 +1313,6 @@ var G = {
             if(a.slowed>0){ed=Math.floor(ed*0.6);a.slowed--;}
             if(this.s.shld>0){ed=Math.floor(ed*0.5);this.s.shld--;}
             if(a.poisoned>0){a.hp-=Math.floor(this.s.ba*0.15);a.poisoned--;}
-            // 灵宠护主：防御值减少伤害
-            if(this.s.pet) ed=Math.max(1,ed-(this.s.pet.evo?this.s.pet.evoDef:this.s.pet.def)*1.5);
             ed=Math.max(1,ed-this.s.df);
             ed=Math.floor(ed*(1+this.faSharpNeg())*(1-this.faRed())); // v8.0 锋锐副作用受击+/不灭减伤
             this.s.hp=Math.max(0,this.s.hp-ed);
@@ -1329,7 +1359,7 @@ var G = {
         }
         if(!db&&this.ch(0.3)) this.triggerEv('wd');
         // 遁速减少云游耗时
-        var dunstBonus=this.s.dunst||0;
+        var dunstBonus=this.effDunst(); // v8.1 功法遁速加成生效
         this.recalc();if(!this.cy((db?0.8:0.5)*Math.max(0.6,1-dunstBonus*0.05))) return;
         this.updDaily('ad');this.refresh();
     },
@@ -1358,7 +1388,7 @@ var G = {
         if(r<0.2){this.triggerEv('sc');return;}
         else if(r<0.4){var ss=Math.floor(sr.ss*decay);this.s.ss+=ss;this.log(sr.name+"灵石+"+ss+(decay<1?'(衰减'+(decay*100).toFixed(0)+'%)':''));}
         else if(r<0.6){var cv=Math.floor(sr.cv*decay);this.s.cv=Math.min(this.s.cv+cv,this.maxCv());this.log(sr.name+"悟道+"+cv+(decay<1?'(衰减'+(decay*100).toFixed(0)+'%)':''));}
-        else if(r<0.75&&decay>0.7){var e=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];this.addEq({t:e.t,name:e.name,atk:e.atk||0,def:e.def||0,hp:e.hp||0});}
+        else if(r<0.75&&decay>0.7){var e=this.EQUIPS[Math.floor(Math.random()*this.EQUIPS.length)];var it={t:e.t,name:e.name,atk:e.atk||0,def:e.def||0,hp:e.hp||0};this.s.inv.push(it);this.log("获得"+it.name+"，已入背包（装备管理手动穿戴）");}
         else if(r<0.9&&decay>0.5){this.s.hb+=Math.floor(2*decay);this.log("药材+"+Math.floor(2*decay));}
         else{this.s.hp=Math.max(0,this.s.hp-30);this.rma(3);this.log("秘境遇险");if(this.s.hp<=0) this.hpDeath();}
         if(!this.s.par&&this.ch(0.18)) this.createPartner();
@@ -1518,7 +1548,7 @@ var G = {
     FACTIONS:{
         zheng:{name:'正道盟',items:[{n:'净化符',desc:'业力+15(洗恶)',cost:200,rep:10,ef:function(){G.addKarma(15);}},{n:'正气丹',desc:'突破率+5%',cost:400,rep:20,ef:function(){G.s.bbrb=Math.min(100,G.s.bbrb+5);}}]},
         xie:{name:'魔道渊',items:[{n:'噬魂诀',desc:'恶业-10,攻+8',cost:200,rep:10,ef:function(){G.addKarma(-10);G.s.ba+=8;G.recalc();}},{n:'血祭符',desc:'攻击+15',cost:400,rep:20,ef:function(){G.s.ba+=15;G.recalc();}}]},
-        zhong:{name:'中立商会',items:[{n:'聚宝令',desc:'灵石+300',cost:300,rep:10,ef:function(){G.s.ss+=300;}},{n:'万货令',desc:'随机装备',cost:500,rep:20,ef:function(){var e=G.EQUIPS[Math.floor(Math.random()*G.EQUIPS.length)];G.addEq({t:e.t,name:e.name,atk:e.atk||0,def:e.def||0,hp:e.hp||0});}}]},
+        zhong:{name:'中立商会',items:[{n:'聚宝令',desc:'灵石+300',cost:300,rep:10,ef:function(){G.s.ss+=300;}},{n:'万货令',desc:'随机装备',cost:500,rep:20,ef:function(){var e=G.EQUIPS[Math.floor(Math.random()*G.EQUIPS.length)];var it={t:e.t,name:e.name,atk:e.atk||0,def:e.def||0,hp:e.hp||0};G.s.inv.push(it);G.log("获得"+it.name+"，已入背包（装备管理手动穿戴）");}}]},
         san:{name:'散修联盟',items:[{n:'自在诀',desc:'寿元+10',cost:250,rep:10,ef:function(){G.s.lfb=(G.s.lfb||0)+10;}},{n:'散修庇护',desc:'全体声望+5',cost:400,rep:20,ef:function(){G.addFac('zheng',5);G.addFac('xie',5);G.addFac('zhong',5);G.addFac('san',5);}}]}
     },
     FA:{
@@ -1623,7 +1653,6 @@ var G = {
         var isB=s.dmons.length===0;
         var t=isB?s.dboss:s.dmons[0];
         var dmg=Math.floor(s.ba*(0.85+Math.random()*0.6)*(1+this.faSharp())); // v8.0 锋锐: 对敌伤害+5%/级
-        if(s.pet) dmg+=Math.floor((s.pet.evo?s.pet.evoAtk:s.pet.atk)*1.0);
         dmg=Math.max(1,dmg-Math.floor(t.atk*0.1));
         t.hp-=dmg;this._pushFx('enemy',dmg,false);this.log("副本战：对"+t.name+"造成"+dmg+"伤害");
         if(t.hp<=0){
@@ -1743,7 +1772,6 @@ var G = {
         this.s.sp-=5; this._tickSkillCDs(); this._tickCooldowns();
         var op=this.s.aopp;
         var dmg=Math.floor(this.s.ba*(0.8+Math.random()*0.7)*(1+this.faSharp())); // v8.0 锋锐: 对敌伤害+5%/级
-        if(this.s.pet) dmg+=Math.floor((this.s.pet.evo?this.s.pet.evoAtk:this.s.pet.atk)*0.8);
         // 遁速先手
         if((this.s.dunst||0)>0&&this.ch(Math.min(0.3,this.s.dunst*0.02))){
             dmg=Math.floor(dmg*1.2);this.log("⚡遁速先手！伤害+20%");
@@ -1763,7 +1791,6 @@ var G = {
         }else{
             var ed=Math.floor(op.atk*(0.6+Math.random()*0.6));
             if(this.s.shld>0){ed=Math.floor(ed*0.5);this.s.shld--;}
-            if(this.s.pet) ed=Math.max(1,ed-(this.s.pet.evo?this.s.pet.evoDef:this.s.pet.def)*1.5);
             ed=Math.max(1,ed-this.s.df);
             ed=Math.floor(ed*(1+this.faSharpNeg())*(1-this.faRed())); // v8.0 锋锐副作用受击+/不灭减伤
             this.s.hp=Math.max(0,this.s.hp-ed);
@@ -1792,7 +1819,6 @@ var G = {
             var op=this.s.aopp;
             var ed=Math.floor(op.atk*(0.6+Math.random()*0.6));
             if(this.s.shld>0){ed=Math.floor(ed*0.5);this.s.shld--;}
-            if(this.s.pet) ed=Math.max(1,ed-(this.s.pet.evo?this.s.pet.evoDef:this.s.pet.def)*1.5);
             ed=Math.max(1,ed-this.s.df);
             ed=Math.floor(ed*(1+this.faSharpNeg())*(1-this.faRed())); // v8.0 锋锐副作用受击+/不灭减伤
             this.s.hp=Math.max(0,this.s.hp-ed);
@@ -2376,13 +2402,14 @@ var G = {
                 var apct=Math.min(100,(this.s.cv/this.maxCv())*100);
                 h+='<div class="cult-ring auto-pulse" style="--p:'+apct+'">'+Math.floor(apct)+'%<br>修为</div>';
             }
+            h+='<div class="res-row">💰'+this.s.ss+' · 🌿'+this.s.hb+' · 📿修为 '+this.s.cv+'/'+this.maxCv()+' · 🔮法则 '+this.s.fa+' · 👁神识'+this.effSsense()+' · 💨遁速'+this.effDunst()+'</div>';
             if(this.s.mas) h+='<div class="card"><span>师尊 '+this.s.mname+' 恩义'+this.s.mfv+'</span><div><button class="btn bs" onclick="G.askMaster();G.save();">请教(20)</button><button class="btn bs" onclick="G._giftMaster();G.save();">赠礼(100)</button></div></div>';
             else h+='<div style="text-align:center;font-size:0.7rem;color:#7a6a8b;">暂无师尊</div>';
             if(this.s.par) h+='<div class="card"><div class="partner-box"></div><div><span>道侣 '+this.s.par.nm+' 亲密度'+this.s.par.it+'</span><div><button class="btn bs" onclick="G.dualCv();G.save();">双修</button><button class="btn bs" onclick="G._giftPar();G.save();">赠礼(50)</button><button class="btn bs" onclick="G._renamePar();">改名</button></div></div></div>';
             else h+='<div style="text-align:center;font-size:0.7rem;color:#7a6a8b;">暂无道侣</div>';
             h+='<div class="card"><span>装备：武器 <span style="color:#ffd78b;">'+(this.s.eq.wp?this.s.eq.wp.name+' +'+(this.s.eq.wp.atk+this.s.r*2):'无')+'</span> | 防具 <span style="color:#ffd78b;">'+(this.s.eq.ar?this.s.eq.ar.name+' +'+(this.s.eq.ar.def+this.s.r):'无')+'</span></span><button class="btn bs" onclick="G._showEq();">管理</button></div>';
             h+='<div class="card"><span>饰品：<span style="color:#ffd78b;">'+(this.s.eq.rg.length>0?this.s.eq.rg.map(function(a){return a.name;}).join(', '):'无')+' ('+this.s.eq.rg.length+'/2)</span></span></div>';
-            if(this.s.pet) h+='<div class="card"><span>灵宠 '+this.s.pet.nm+' Lv.'+this.s.pet.lv+' '+(this.s.pet.evo?'🌟':'')+'</span><button class="btn bs" onclick="G.feedPet();G.save();">喂养(10)</button></div>';
+            if(this.s.pet) h+='<div class="card"><span>灵宠 '+this.s.pet.nm+' Lv.'+this.s.pet.lv+' '+(this.s.pet.evo?'🌟':'')+' <small>攻+'+this.petAtk()+' 护+'+(this.petDef()*2)+' 血+'+this.petHp()+'</small></span><button class="btn bs" onclick="G.feedPet();G.save();">喂养(10)</button></div>';
             else h+='<div class="card"><span>灵宠：无</span></div>';
             h+='<div class="card"><span>技能：'+(this.s.skls.length>0?this.s.skls.map(function(s){var sk=G.SKILLS.filter(function(x){return x.id===s;})[0];return sk?sk.name:'';}).join(', '):'无')+'</span><button class="btn bs" onclick="G._rename();">改名</button></div>';
             // 功法
@@ -2398,6 +2425,8 @@ var G = {
                 });
                 h+='<div class="card"><span>丹药：<span style="color:#ffd78b;">'+(pstr||'无')+'</span></span><button class="btn bs" onclick="G._showPills();">服用</button></div>';
             }
+            // v8.1 一键炼丹：药材→修为
+            h+='<div class="card" style="border-color:#7fc97f;"><span>🍵 一键炼丹 <small>药材'+this.s.hb+'→修为</small></span><button class="btn bs" onclick="G.alchemyCv();G.save();">炼制(5药材)</button></div>';
             // 飞升境: 转世飞升入口
             if(this.s.r>=7) h+='<div class="card" style="border-color:#ffd78b;"><span>🏆 已臻飞升境！道统底蕴可传承后世</span><button class="btn gd" onclick="G.resetGame(true,\'ascend\');">转世飞升（传承道统）</button></div>';
             // ===== v8.0 法则领悟（飞升后长线成长） =====
@@ -2418,6 +2447,8 @@ var G = {
                     });
                     h+='</div>';
                 });
+            }else{
+                h+='<div class="card" style="border-color:#6a5a8b;"><span style="color:#b9a0e0;">🔮 法则（飞升后开启）</span><br><small style="color:#9a8ab5;">飞升后可领悟法则。法则点来源：飞升后修炼感悟 / 秘境高层 / 竞技胜利。当前已攒 '+this.s.fa+'</small></div>';
             }
             // 逆天改命（仅高阶可见）
             if(this.s.r>=2) h+='<div class="card"><span style="color:#888;">逆天改命·重塑灵根</span><button class="btn bs" onclick="G.rerollRoot();G.save();">5000灵石</button></div>';
@@ -2436,6 +2467,9 @@ var G = {
                 var ok=self2.s.hb>=p.mat&&self2.s.ss>=p.cost;
                 h+='<div class="card"><span>'+p.name+' <small>药材'+p.mat+' 灵石'+p.cost+'</small></span><button class="btn bs" '+(ok?'onclick="G.craftPill('+i+');G.save();"':'disabled')+'>炼制</button></div>';
             });
+            // v8.1 一键炼丹：药材→修为（与洞府一致，丹房主题入口）
+            h+='<div style="font-size:0.8rem;color:#b7a17c;margin-top:0.3rem;">一键炼丹（药材化修为）</div>';
+            h+='<div class="card" style="border-color:#7fc97f;"><span>🍵 炼丹·化修为 <small>药材'+this.s.hb+'→修为</small></span><button class="btn bs" onclick="G.alchemyCv();G.save();">炼制(5药材)</button></div>';
             document.getElementById('pnlEstate').innerHTML=h;
             break;
         case 'sect':
@@ -2760,7 +2794,7 @@ var G = {
         h+='<div class="si">灵石 <span>'+s.ss+'</span></div>';
         h+='<div class="si">攻 <span>'+s.ba+'</span> | 防 <span>'+s.df+'</span></div>';
         h+='<div class="si">寿元 <span>'+ageStr+'</span>'+(s.r===6?' 飞升倒计时:'+Math.floor(s.ftl):'')+'</div>';
-        h+='<div class="si">神识 <span>'+(s.ssense||0)+'</span> | 遁速 <span>'+(s.dunst||0)+'</span></div>';
+        h+='<div class="si">神识 <span>'+this.effSsense()+'</span> | 遁速 <span>'+this.effDunst()+'</span></div>';
         h+='<div class="si">突破率 <span>'+this.brRate()+'%</span> | 药材 <span>'+s.hb+'</span></div>';
         var pct=Math.min(100,(s.cv/this.maxCv())*100);
         h+='<div class="sbar"><span class="sbl">修为</span><div class="sbf"><div class="sbi" style="width:'+pct+'%"></div></div><span class="sbt">'+s.cv+'/'+this.maxCv()+'</span></div>';
