@@ -279,6 +279,7 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 var G = {
     SAVE_KEY: 'xiuxian_v23',
     MANUAL_KEY: 'xiuxian_v23_manual',
+    VER: '8.0.1',   // 游戏内置版本号；部署时由 _push.js 提取写入 version.json，启动时比对远端实现免硬刷更新
     
     REALMS: [
         {name:"炼气期",atkMul:2,spiritMax:100,lifeBonus:20,hpBase:80,subCost:[60,100]},
@@ -556,6 +557,32 @@ var G = {
     },
     _closeMod: function(){document.getElementById('modalC').innerHTML='';},
     closeMod: function(){this._closeMod();},
+
+    // v8.0.1: 版本自检——启动后比对远端 version.json，发现新版本弹窗提示重载（解决静态托管缓存导致需手动硬刷的问题）
+    _checkUpdate: function(){
+        var self=this;
+        try{
+            fetch('version.json?t='+Date.now(),{cache:'no-store'})
+                .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+                .then(function(j){ if(j&&j.ver&&j.ver!==self.VER) self._showUpdate(j.ver); })
+                .catch(function(){});
+        }catch(e){ /* file:// 或离线环境静默降级 */ }
+    },
+    _showUpdate: function(ver){
+        var h='<div class="settle-card">'+
+            '<div class="settle-row">🔄 检测到新版本 '+ver+'</div>'+
+            '<div class="settle-tip">当前 '+this.VER+'。点击「立即更新」即可体验最新内容，存档不受影响。</div>'+
+            '<div class="settle-btns">'+
+            '<button class="btn" onclick="G._doUpdate()">立即更新</button>'+
+            '<button class="btn ghost" onclick="G._closeMod()">稍后</button>'+
+            '</div></div>';
+        this.mod(h);
+    },
+    _doUpdate: function(){
+        try{ this.save(); }catch(e){}
+        this._closeMod();
+        try{ location.reload(true); }catch(e){ location.reload(); }
+    },
 
     checkAch: function(){
         var s=this.s, changed=false;
@@ -2753,6 +2780,7 @@ var G = {
             }
             this.startAutosave();
             if(this.s&&this.s.auto) this.toggleAuto();
+            this._checkUpdate(); // v8.0.1: 启动后自检远端版本，无需手动硬刷新
         }catch(e){
             console.error("初始化失败:",e);
             try{localStorage.removeItem(this.SAVE_KEY);}catch(x){}
