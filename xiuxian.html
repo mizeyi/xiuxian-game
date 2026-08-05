@@ -76,29 +76,8 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 .ach-card{background:#283a18;border:1px solid #7aa84a;border-radius:0.6rem;padding:0.3rem 0.5rem;font-size:0.68rem;display:flex;justify-content:space-between;align-items:center;}
 .ach-card.locked{opacity:0.5;}
 
-/* ===== 场景氛围背景（含CG图片） ===== */
-.scene-portrait{
-    width:100%;height:110px;border-radius:0.6rem;
-    border:1px solid rgba(200,170,100,0.3);
-    background-size:cover;background-position:center;background-repeat:no-repeat;
-}
-.scene-cave{background-image:url('game-assets/bg-cave.webp');}
-.scene-estate{background-image:url('game-assets/bg-estate.webp');}
-.scene-sect{background-image:url('game-assets/bg-sect.webp');}
-.scene-wild{background-image:url('game-assets/bg-wild.webp');}
-.scene-market{background-image:url('game-assets/bg-market.webp');}
-.scene-dungeon{background-image:url('game-assets/bg-dungeon.webp');}
-.scene-secret{background-image:url('game-assets/bg-secret.webp');}
-.scene-arena{background-image:url('game-assets/bg-arena.webp');}
-.scene-portrait::after{
-    content:'';position:absolute;inset:0;
-    background:linear-gradient(to bottom,rgba(20,20,40,0.15) 0%,rgba(20,20,40,0.35) 100%);
-    pointer-events:none;
-}
-.sp-inner{
-    font-size:1.2rem;text-align:center;z-index:1;text-shadow:0 0 12px rgba(0,0,0,0.5),0 0 3px rgba(255,220,150,0.3);
-    color:#ffe8a0;letter-spacing:0.1rem;position:relative;
-}
+/* 场景立绘横幅已移除（v8.0 UI 重构）：场景标识改由 .scene-title 文字标题呈现，腾出纵向空间 */
+
 /* 角色头像 */
 .avatar-box{
     width:44px;height:44px;border-radius:50%;border:2px solid #c7a55b;
@@ -113,15 +92,9 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 .boss-dragon{background-image:url('game-assets/boss-dragon.webp');}
 .boss-fox{background-image:url('game-assets/boss-fox.webp');}
 .boss-spirit{background-image:url('game-assets/boss-spirit.webp');}
-/* NPC立绘 - 全宽展示 */
-.npc-portrait{
-    width:100%;border-radius:0.7rem;margin:0.2rem 0;border:1px solid rgba(200,170,100,0.4);
-    box-shadow:0 0 15px rgba(200,160,80,0.15);overflow:hidden;flex-shrink:0;
-}
-.npc-img{width:100%;display:block;border-radius:0.7rem;}
+/* NPC 全宽立绘已移除（v8.0）：NPC 场景改用文字标题 + 卡片内容，信息密度更高、不再占大图空间 */
 /* 移动端适配 */
 @media(max-width:480px){
-    .scene-portrait{height:80px;}
     .boss-img{height:100px;background-size:contain;background-repeat:no-repeat;}
     .avatar-box{width:38px;height:38px;}
     .partner-box{width:46px;height:46px;}
@@ -137,6 +110,14 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 .scene-header-bar{
     display:flex;align-items:center;gap:0.4rem;padding:0.2rem 0;
 }
+.scene-title{font-size:0.95rem;color:#ffe8a0;padding:0.25rem 0 0.1rem;letter-spacing:0.05rem;text-shadow:0 0 8px rgba(0,0,0,0.4);}
+.settle-card{text-align:left;}
+.settle-card h3{text-align:center;color:#ffd78b;margin:0.2rem 0 0.6rem;}
+.settle-row{display:flex;justify-content:space-between;padding:0.28rem 0;border-bottom:1px solid rgba(200,170,100,0.12);font-size:0.85rem;}
+.settle-row span{color:#b7a17c;}
+.settle-tip{font-size:0.72rem;color:#9fb0c8;margin:0.5rem 0;text-align:center;}
+.settle-btns{display:flex;flex-direction:column;gap:0.4rem;margin-top:0.6rem;}
+.settle-btns .btn{width:100%;}
 .scene-icon{font-size:1.4rem;}
 /* 保存提示 */
 .toast{position:fixed;top:12px;left:50%;transform:translateX(-50%) translateY(-60px);
@@ -262,7 +243,6 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
     <button class="btn bs" onclick="G.quickHeal();G.save();" title="回满生命(15灵石)">💚回满生命</button>
     <button class="btn bs" onclick="G.quickMed();G.save();" title="调息回复(5灵石)">🌿调息</button>
 </div>
-<div class="scene-portrait scene-cave" id="scenePortrait"><div class="sp-inner">🏔️ 洞府修炼</div></div>
 <div class="scene-b">
     <button class="scn active" onclick="G.switchScene('cave')">洞府</button>
     <button class="scn" onclick="G.switchScene('estate')">仙府</button>
@@ -451,7 +431,7 @@ var G = {
             achs:{},drs:0,dts:{},
             logs:["踏入仙途..."],evact:false,
             aopp:null,
-            auto:false,autoEv:true,combo:false,lastSeen:Date.now(),
+            auto:false,autoEv:true,combo:false,lastSeen:Date.now(),bornAt:Date.now(),fa:0,faLv:{},faWash:0,
             // ===== v6 道途 + 轮回 =====
             daoTu:'san',                 // 当前道途: san/jian/dan/ti/zhen/fu
             jy:0,jz:0,fz:0,lm:0,         // 路径专属资源: 剑意/阵基/符纸/灵墨
@@ -505,7 +485,9 @@ var G = {
         s._zhenEff=(s.daoTu==='zhen')?Math.min(1.6,1+s.jzLv*0.05):1; // v6 阵效率
         var rb=this.relicBonus();                       // Wave2 遗物加成
         if(rb.ba) s.ba=Math.floor(s.ba*(1+rb.ba));
+        if(this.faBa()) s.ba=Math.floor(s.ba*(1+this.faBa())); // v8.0 破障: 攻击独立乘区
         if(rb.mhp) s.mhp=Math.floor(s.mhp*(1+rb.mhp));
+        if(this.faMhp()) s.mhp=Math.floor(s.mhp*(1+this.faMhp())); // v8.0 磐石: 气血上限独立乘区
         if(!isFinite(s.mhp)||s.mhp<=0) s.mhp=80;
         if(s.sp>s.msp) s.sp=s.msp;
         if(s.hp>s.mhp) s.hp=s.mhp;
@@ -517,7 +499,7 @@ var G = {
     subCost: function(){var s=this.s;return s.sr>=2?1e99:this.REALMS[s.r].subCost[s.sr];},
     brNeed: function(){return Math.floor(this.REALMS[this.s.r].subCost[1]*1.5);},
     maxCv: function(){return this.s.sr<2?this.subCost():this.brNeed();},
-    brRate: function(){return Math.min(100,(this.s.bbr||0)+(this.s.bbrb||0));},
+    brRate: function(){return Math.min(100,(this.s.bbr||0)+(this.s.bbrb||0) - this.faBrPen());}, // v8.0 磐石副作用: 突破率-2%/级
     agePen: function(){return Math.max(0.3,1-(this.s.ag-20)*0.006);},
     cvMul: function(){
         var m=this.ROOTS[this.s.rt].mult; // 灵根倍率直接决定修炼速度
@@ -532,9 +514,11 @@ var G = {
         if(this.s.es.sa>0) m+=this.s.es.sa*0.1;
         if(this.s.es.tr>0) m+=this.s.es.tr*0.05;
         m += this.relicCv();                           // Wave2 遗物修炼加成
+        m += this.faCv();                              // v8.0 驻景: 修为获取
+        if(this.s.faLv.bumie) m *= (1 - this.s.faLv.bumie*0.05); // v8.0 不灭副作用: 修炼速度-5%/级
         return Math.max(0.15,m);
     },
-    cvGain: function(){return Math.floor((4+this.s.r*2.5)*(0.8+Math.random()*0.4)*this.cvMul());},
+    cvGain: function(){return Math.floor((4+this.s.r*2.5)*(0.8+Math.random()*0.4)*this.cvMul()*(1+this.faSpd()));}, // v8.0 流光: 修炼速度+5%/级
 
     log: function(msg){
         var s=this.s; s.logs.push(msg);
@@ -544,16 +528,16 @@ var G = {
 
     cy: function(y){
         var s=this.s;
-        if(s.r===6){s.ftl=Math.max(0,s.ftl-y);if(s.ftl<=0){this.log("飞升时限已至，轮回重修。");this.resetGame(true);return false;}return true;}
-        s.ag+=y;if(s.ag>=s.mag){this.log("寿元耗尽，轮回重修。");this.resetGame(true);return false;}return true;
+        if(s.r===6){s.ftl=Math.max(0,s.ftl-y);if(s.ftl<=0){this.log("飞升时限已至，轮回重修。");this.resetGame(true,'death');return false;}return true;}
+        s.ag+=y;if(s.ag>=s.mag){this.log("寿元耗尽，轮回重修。");this.resetGame(true,'death');return false;}return true;
     },
     rma: function(y){
         var s=this.s;
-        if(s.r>=6){s.ftl=Math.max(0,s.ftl-y);if(s.ftl<=0){this.log("飞升时限耗尽，轮回重修。");this.resetGame(true);}return;}
+        if(s.r>=6){s.ftl=Math.max(0,s.ftl-y);if(s.ftl<=0){this.log("飞升时限耗尽，轮回重修。");this.resetGame(true,'death');}return;}
         if(!isFinite(s.mag)) return;
         s.agr=(s.agr||0)+y;
         s.mag=Math.max(s.ag,s.mag-y);
-        if(s.ag>=s.mag){this.log("寿元枯竭，轮回重修。");this.resetGame(true);}
+        if(s.ag>=s.mag){this.log("寿元枯竭，轮回重修。");this.resetGame(true,'death');}
     },
     hpDeath: function(){
         this.log("重伤昏迷！修为-10%，寿元-5");
@@ -827,13 +811,14 @@ var G = {
         if(this.chkEv()) return;
         if(this.s.sp<5){this.log("灵力不足");return;}
         var mx=this.maxCv();if(this.s.cv>=mx){this.log("修为已满，请突破");return;}
-        this.s.sp-=4;
+        this.s.sp-=Math.round(4*(1+this.faSpDrain())); // v8.0 破障副作用: 修炼灵力消耗+15%/级
         var g=this.cvGain();this.s.cv=Math.min(this.s.cv+g,mx);
         this.s.hp=Math.min(this.s.mhp,this.s.hp+Math.floor(this.s.mhp*0.03));
         if(!this.cy(0.5)) return;
         this.log("修炼 +"+g+"修为");
         if(this.ch(0.18)) this.triggerEv('cv', this.s.auto && this.s.autoEv);
         if(this.ch(0.08)&&!this.s.par) this.createPartner();
+        if(this.s.r>=7 && this.ch(0.005)){ this.s.fa+=1; } // v8.0 飞升后修炼感悟法则点(长线)
         this.updDaily('cv');this.checkAch();this.refresh();
     },
     // ===== v6 道途专属修炼动作 =====
@@ -890,7 +875,7 @@ var G = {
         var n=this.brNeed();
         if(this.s.cv<n){this.log("需"+n+"修为引动天劫");return;}
         this.s.cv-=n;
-        var rate=Math.min(0.98, this.brRate()/100 + Math.max(0,this.s.karma)/100*0.1); // Wave3 善业加成突破率
+        var rate=Math.min(0.98, this.brRate()/100 + Math.max(0,this.s.karma)/100*0.1*this.faKarmaMul()*(1-this.faKarmaStab())); // Wave3 善业 + v8.0 业镜放大/净业稳固
         var ok=this.ch(rate);
         if(ok && this.s.karma<0 && this.ch(this.mindDemon())){ ok=false; this.log('心魔趁业障入侵，渡劫失守！'); }
         this.s.bbrb=0;
@@ -1261,6 +1246,7 @@ var G = {
             // 灵宠护主：防御值减少伤害
             if(this.s.pet) ed=Math.max(1,ed-(this.s.pet.evo?this.s.pet.evoDef:this.s.pet.def)*1.5);
             ed=Math.max(1,ed-this.s.df);
+            ed=Math.floor(ed*(1+this.faSharpNeg())*(1-this.faRed())); // v8.0 锋锐副作用受击+/不灭减伤
             this.s.hp=Math.max(0,this.s.hp-ed);
             this._pushFx('player',ed,false);
             this._pushFx('player',ed,false);
@@ -1432,8 +1418,9 @@ var G = {
             s.my+=coin; run.rewards+=coin;
             s.hp=Math.max(1,s.hp-Math.floor(mon.atk*0.25));
             if(type==='boss'||(type==='elite'&&this.ch(0.5))) this.secDropRelic();
+            if(s.r>=7) s.fa += (type==='boss'? this.rng(6,12): this.rng(3,7)); // v8.0 飞升后秘境高层掉法则点
         }else{
-            s.hp-=mon.atk;
+            s.hp-=Math.floor(mon.atk*(1+this.faSharpNeg())*(1-this.faRed())); // v8.0 锋锐副作用受击+/不灭减伤
             if(s.hp<=0){ this.log('秘境试炼陨落，未封存遗物散佚'); this.secEndRun(false); return; }
         }
         run.cur++; this.cy(0.3);this.refresh();
@@ -1464,6 +1451,24 @@ var G = {
 
     // ===== Wave3 因果业力 + 势力 =====
     addKarma: function(d){ this.s.karma=Math.max(-100,Math.min(100,this.s.karma+d)); },
+    /* ===== v8.0 法则系统 helpers ===== */
+    _faLvSum: function(){var t=0,s=this.s.faLv||{};for(var k in s)t+=s[k];return t;},
+    _faReqOk: function(id){var f=this.FA[id],r=f&&f.req;if(!r)return true;if(r==='yejing')return (this.s.faLv.yejing||0)>0;if(r==='lives2')return (this.s.meta&&this.s.meta.lives)>=2;if(r==='lives1')return (this.s.meta&&this.s.meta.lives)>=1;return true;},
+    _faCost: function(id){var f=this.FA[id],lv=this.s.faLv[id]||0;return Math.floor(30*Math.pow(1.6,lv));},
+    _faWashCost: function(id){var lv=this.s.faLv[id]||0;return Math.floor(30*Math.pow(1.6,lv)*0.5*Math.pow(1.5,this.s.faWash||0));},
+    faUp: function(id){var f=this.FA[id];if(!f)return;if(!this._faReqOk(id)){this.log('法则前置未满足');return;}var lv=this.s.faLv[id]||0;if(lv>=f.max){this.log('法则已至满级');return;}var cost=this._faCost(id);if(this.s.fa<cost){this.log('法则点不足(需'+cost+')');return;}this.s.fa-=cost;this.s.faLv[id]=lv+1;this.recalc();this.log('领悟/升级法则【'+f.name+'】Lv.'+(lv+1));this.refresh();},
+    faWash: function(id){var lv=this.s.faLv[id]||0;if(lv<=0){this.log('该法则未领悟');return;}if(!confirm('洗点将返还部分法则点并清空该法则等级，确定？'))return;var ret=Math.floor(30*Math.pow(1.6,lv)*0.5);this.s.fa+=ret;this.s.faLv[id]=0;this.s.faWash=(this.s.faWash||0)+1;this.recalc();this.log('洗点【'+this.FA[id].name+'】，返还'+ret+'法则点');this.refresh();},
+    faBa: function(){return (this.s.faLv.pozhang||0)*0.08;},
+    faMhp: function(){return (this.s.faLv.panshi||0)*0.08;},
+    faRed: function(){return Math.min(0.5,(this.s.faLv.bumie||0)*0.10);},
+    faCv: function(){return (this.s.faLv.zhujing||0)*0.06;},
+    faSpd: function(){return (this.s.faLv.liuguang||0)*0.05;},
+    faSharp: function(){return (this.s.faLv.fengrui||0)*0.05;},
+    faSharpNeg: function(){return (this.s.faLv.fengrui||0)*0.03;},
+    faSpDrain: function(){return (this.s.faLv.pozhang||0)*0.15;},
+    faBrPen: function(){return (this.s.faLv.panshi||0)*0.02;},
+    faKarmaMul: function(){return 1+(this.s.faLv.yejing||0)*0.3;},
+    faKarmaStab: function(){return (this.s.faLv.jingye||0)*0.2;},
     addFac: function(f,d){ if(!this.s.fac[f])this.s.fac[f]=0; this.s.fac[f]=Math.max(0,Math.min(100,this.s.fac[f]+d)); },
     karmaLabel: function(){
         var k=this.s.karma;
@@ -1471,12 +1476,24 @@ var G = {
         if(k<0) return '<span style="color:#ff7b7b;">恶'+(-k)+'</span>';
         return '<span style="color:#b7a17c;">中性0</span>';
     },
-    mindDemon: function(){ return this.s.karma<0? Math.min(0.6, -this.s.karma/100*0.4):0; }, // [PLACEHOLDER] 心魔概率
+    mindDemon: function(){ return this.s.karma<0? Math.min(0.6, -this.s.karma/100*0.4*(1-this.faKarmaStab())):0; }, // [PLACEHOLDER] 心魔概率（v8.0 净业稳固）
     FACTIONS:{
         zheng:{name:'正道盟',items:[{n:'净化符',desc:'业力+15(洗恶)',cost:200,rep:10,ef:function(){G.addKarma(15);}},{n:'正气丹',desc:'突破率+5%',cost:400,rep:20,ef:function(){G.s.bbrb=Math.min(100,G.s.bbrb+5);}}]},
         xie:{name:'魔道渊',items:[{n:'噬魂诀',desc:'恶业-10,攻+8',cost:200,rep:10,ef:function(){G.addKarma(-10);G.s.ba+=8;G.recalc();}},{n:'血祭符',desc:'攻击+15',cost:400,rep:20,ef:function(){G.s.ba+=15;G.recalc();}}]},
         zhong:{name:'中立商会',items:[{n:'聚宝令',desc:'灵石+300',cost:300,rep:10,ef:function(){G.s.ss+=300;}},{n:'万货令',desc:'随机装备',cost:500,rep:20,ef:function(){var e=G.EQUIPS[Math.floor(Math.random()*G.EQUIPS.length)];G.addEq({t:e.t,name:e.name,atk:e.atk||0,def:e.def||0,hp:e.hp||0});}}]},
         san:{name:'散修联盟',items:[{n:'自在诀',desc:'寿元+10',cost:250,rep:10,ef:function(){G.s.lfb=(G.s.lfb||0)+10;}},{n:'散修庇护',desc:'全体声望+5',cost:400,rep:20,ef:function(){G.addFac('zheng',5);G.addFac('xie',5);G.addFac('zhong',5);G.addFac('san',5);}}]}
+    },
+    FA:{
+        pozhang:{sys:'atk',name:'破障',desc:'攻击+8%/级；修炼灵力消耗+15%/级',max:5,req:null},
+        fengrui:{sys:'atk',name:'锋锐',desc:'对敌伤害+5%/级；受击+3%/级',max:5,req:null},
+        bumie:{sys:'def',name:'不灭',desc:'受击伤害-10%/级；修炼速度-5%/级',max:5,req:null},
+        panshi:{sys:'def',name:'磐石',desc:'气血上限+8%/级；突破率-2%/级',max:5,req:null},
+        zhujing:{sys:'time',name:'驻景',desc:'修为获取+6%/级',max:5,req:null},
+        liuguang:{sys:'time',name:'流光',desc:'修炼速度+5%/级（副作用灵石+10%待后续）',max:5,req:null},
+        yejing:{sys:'karma',name:'业镜',desc:'善业突破加成每级×1.3(满级×2.5)',max:5,req:null},
+        jingye:{sys:'karma',name:'净业',desc:'业力波动影响减弱(心境稳固)',max:5,req:'yejing'},
+        guiyuan:{sys:'root',name:'归元',desc:'轮回继承效率+20%/级',max:5,req:'lives2'},
+        daozhong:{sys:'root',name:'道种',desc:'下世开局法则点+10/级',max:5,req:'lives1'}
     },
     facShop: function(fid,idx){
         var f=this.FACTIONS[fid]; if(!f) return;
@@ -1567,7 +1584,7 @@ var G = {
         s.sp-=5; this._tickSkillCDs(); this._tickCooldowns();
         var isB=s.dmons.length===0;
         var t=isB?s.dboss:s.dmons[0];
-        var dmg=Math.floor(s.ba*(0.85+Math.random()*0.6));
+        var dmg=Math.floor(s.ba*(0.85+Math.random()*0.6)*(1+this.faSharp())); // v8.0 锋锐: 对敌伤害+5%/级
         if(s.pet) dmg+=Math.floor((s.pet.evo?s.pet.evoAtk:s.pet.atk)*1.0);
         dmg=Math.max(1,dmg-Math.floor(t.atk*0.1));
         t.hp-=dmg;this._pushFx('enemy',dmg,false);this.log("副本战：对"+t.name+"造成"+dmg+"伤害");
@@ -1687,7 +1704,7 @@ var G = {
         if(this.s.sp<5){this.log("灵力不足");return;}
         this.s.sp-=5; this._tickSkillCDs(); this._tickCooldowns();
         var op=this.s.aopp;
-        var dmg=Math.floor(this.s.ba*(0.8+Math.random()*0.7));
+        var dmg=Math.floor(this.s.ba*(0.8+Math.random()*0.7)*(1+this.faSharp())); // v8.0 锋锐: 对敌伤害+5%/级
         if(this.s.pet) dmg+=Math.floor((this.s.pet.evo?this.s.pet.evoAtk:this.s.pet.atk)*0.8);
         // 遁速先手
         if((this.s.dunst||0)>0&&this.ch(Math.min(0.3,this.s.dunst*0.02))){
@@ -1703,12 +1720,14 @@ var G = {
             if(this.ch(0.12+this.s.aw*0.005)){
                 if(this._acquireTech(this.techPools.ar)) this.log("📖 竞技获胜，悟得功法！");
             }
+            if(this.s.r>=7) this.s.fa += this.rng(4,7); // v8.0 飞升后竞技胜利掉法则点
             this.s.aopp=null;this.checkAch();
         }else{
             var ed=Math.floor(op.atk*(0.6+Math.random()*0.6));
             if(this.s.shld>0){ed=Math.floor(ed*0.5);this.s.shld--;}
             if(this.s.pet) ed=Math.max(1,ed-(this.s.pet.evo?this.s.pet.evoDef:this.s.pet.def)*1.5);
             ed=Math.max(1,ed-this.s.df);
+            ed=Math.floor(ed*(1+this.faSharpNeg())*(1-this.faRed())); // v8.0 锋锐副作用受击+/不灭减伤
             this.s.hp=Math.max(0,this.s.hp-ed);
             this._pushFx('player',ed,false);
             this.log(op.name+"反击，造成"+ed+"伤害");
@@ -1729,6 +1748,7 @@ var G = {
             if(this.ch(0.12+this.s.aw*0.005)){
                 if(this._acquireTech(this.techPools.ar)) this.log("📖 竞技获胜，悟得功法！");
             }
+            if(this.s.r>=7) this.s.fa += this.rng(4,7); // v8.0 飞升后竞技胜利掉法则点
             this.s.aopp=null;this.checkAch();
         }else{
             var op=this.s.aopp;
@@ -1736,6 +1756,7 @@ var G = {
             if(this.s.shld>0){ed=Math.floor(ed*0.5);this.s.shld--;}
             if(this.s.pet) ed=Math.max(1,ed-(this.s.pet.evo?this.s.pet.evoDef:this.s.pet.def)*1.5);
             ed=Math.max(1,ed-this.s.df);
+            ed=Math.floor(ed*(1+this.faSharpNeg())*(1-this.faRed())); // v8.0 锋锐副作用受击+/不灭减伤
             this.s.hp=Math.max(0,this.s.hp-ed);
             this._pushFx('player',ed,false);
             this.log(op.name+"反击，造成"+ed+"伤害");
@@ -1985,18 +2006,57 @@ var G = {
             this.save();
         }catch(e){console.warn('导入失败',e);this._toast('导入失败：'+(e.message||'存档损坏'));}
     },
-    resetGame: function(sil){
-        if(!sil&&!confirm('确定轮回重修？将结算本世道统传承')) return;
+    resetGame: function(sil, cause){
         this._autoStop();this._comboStop();
         var leg=this.legacyOf();
+        /* v8.0: 死亡/飞升/主动重修统一先展示结算画面，玩家看本世总结后选择转世或彻底重开；
+           不再在展示前清档（_hardReset 才清），结算期间存档保留更安全 */
+        this._showSettlement(leg, cause||(sil?'death':'manual'));
+    },
+    _showSettlement: function(leg, cause){
+        var s=this.s;
+        var causeTxt={death:'道陨',ascend:'飞升转世',manual:'主动重修'}[cause]||'重修';
+        var liveMs=Date.now()-(s.bornAt||Date.now());
+        var mins=Math.floor(liveMs/60000), hrs=Math.floor(mins/60), days=Math.floor(hrs/24);
+        var liveStr= days>0? (days+'天'+(hrs%24)+'时') : (hrs>0? (hrs+'时'+(mins%60)+'分') : (mins+'分'));
+        var achN=Object.keys(s.achs||{}).length;
+        var lives=(s.meta&&s.meta.lives)||1;
+        var faN=this._faLvSum ? this._faLvSum() : 0;
+        var faInfo = faN>0 ? ('已悟法则 '+faN+' 道') : '';
+        var html='<div class="settle-card">'+
+            '<h3>'+causeTxt+' · 本世结算</h3>'+
+            '<div class="settle-row"><span>最终境界</span><b>'+this.REALMS[s.r].name+'</b></div>'+
+            '<div class="settle-row"><span>本世成就</span><b>'+achN+' 项</b></div>'+
+            '<div class="settle-row"><span>轮回世数</span><b>第 '+lives+' 世</b></div>'+
+            '<div class="settle-row"><span>本世存活</span><b>'+liveStr+'</b></div>'+
+            '<div class="settle-row"><span>道统底蕴</span><b style="color:#ffd78b;">'+leg+'</b></div>'+
+            (faInfo?'<div class="settle-row"><span>法则</span><b>'+faInfo+'</b></div>':'')+
+            '<div class="settle-tip">'+ (leg>0? '可转世重修传承道统底蕴，或彻底重开清零一切':'无底蕴可传承，仅可彻底重开') +'</div>'+
+            '<div class="settle-btns">'+
+            (leg>0?'<button class="btn pr" id="settleReinc">转世重修（传承 '+leg+' 底蕴）</button>':'')+
+            '<button class="btn dg" id="settleHard">彻底重开（清空一切）</button>'+
+            '</div></div>';
+        this.mod(html);
+        var self=this;
+        setTimeout(function(){
+            var rb=document.getElementById('settleReinc');
+            if(rb) rb.addEventListener('click',function(){ self._reincarnate(leg); });
+            var hb=document.getElementById('settleHard');
+            if(hb) hb.addEventListener('click',function(){
+                if(confirm('彻底重开将清空所有进度（含底蕴/法则/传承），确定？')){ self._hardReset(); }
+            });
+        },50);
+    },
+    _hardReset: function(){
         try{localStorage.removeItem(this.SAVE_KEY);localStorage.removeItem(this.MANUAL_KEY);}catch(e){}
-        if(leg<=0){ this.startNew(); return; } // 无任何底蕴: 纯新号
-        this._reincarnate(leg);
+        this.startNew();
+        this._closeMod();
     },
     legacyOf: function(){
         var s=this.s, R=this.REINC;
         var leg=R.flyBase*(s.r/7); // 按最高境界比例给底蕴
         leg+=(Object.keys(s.achs||{}).length)*R.achEach; // 成就越多底蕴越厚
+        if(s.faLv&&s.faLv.guiyuan) leg=Math.floor(leg*(1+s.faLv.guiyuan*0.2)); // v8.0 归元: 轮回继承效率+20%/级
         leg=Math.min(leg,R.cap); // 封顶防无限叠
         return Math.floor(leg);
     },
@@ -2036,8 +2096,10 @@ var G = {
     },
     _applyReincarnate: function(leg, pend){
         var R=this.REINC, oldDao=this.s.daoTu, oldLives=this.s.meta.lives, self=this, oldRel=this.s.relCodex||{};
+        var oldFaSum=this._faLvSum?this._faLvSum():0, oldDaoSeed=(this.s.faLv&&this.s.faLv.daozhong)||0; // v8.0 法则继承捕获(重建前)
         this.s=this.defState();
         this.s.meta={lives:oldLives+1, legacy:0, inherit:pend, dead:false};
+        this.s.fa=Math.floor(oldFaSum*0.3)+oldDaoSeed*10; // v8.0 法则继承: 旧世法则总等级×0.3折算 + 道种下世开局法则点
         this.s.relCodex=oldRel;                       // Wave2 遗物图鉴随轮回继承
         this.s.wei=Math.floor(leg*0.02);              // Wave3 威望根基继承(声望起点)
         this.s.rootBonus=pend.root*R.rootStep;     // v6 继承: 灵根资质
@@ -2058,6 +2120,7 @@ var G = {
             self.checkDaily();self.refresh();self.save();
             self.log("轮回重修（第"+self.s.meta.lives+"世）！继承：灵根资质+"+(pend.root*R.rootStep).toFixed(2)+" 道天赋+"+(pend.dao*R.daoStep*100).toFixed(0)+"% 寿元+"+(pend.life*R.lifeAdd)+(pend.pack?" 资源包":""));
             self.switchScene('cave');
+            self._closeMod(); /* v8.0: 关闭底蕴分配 overlay，露出新游戏（原流程靠点背景关闭，脆弱） */
         });
     },
     startNew: function(){
@@ -2162,12 +2225,7 @@ var G = {
     switchScene: function(sc){
         this.curScene=sc;
         if(sc!=='wild'&&sc!=='dungeon'&&sc!=='arena') this._comboStop();
-        // 更新场景头像栏
-        var sp=document.getElementById('scenePortrait');
-        if(sp){sp.className='scene-portrait scene-'+sc;}
-        var icons={cave:'🏔️ 洞府修炼',estate:'🏡 仙府洞天',sect:'🏯 宗门问道',wild:'🌲 荒郊野外',market:'🏪 坊市交易',dungeon:'💀 副本探险',secret:'✨ 秘境寻宝',arena:'⚔️ 竞技斗法'};
-        var si=sp?sp.querySelector('.sp-inner'):null;
-        if(si) si.textContent=icons[sc]||sc;
+        /* 场景横幅已移除（v8.0）；场景标题由 _sceneTitle 在 _renderPn 时注入 */
         document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('active');});
         var btns=document.querySelectorAll('.scn');
         btns.forEach(function(b){if(b.textContent.indexOf(this._scTxt(sc))>=0) b.classList.add('active');},this);
@@ -2191,6 +2249,10 @@ var G = {
         var rt=this.ROOTS[s.rt];
         var h='<div class="scene-header-bar"><div class="avatar-box '+ac+'"></div><div style="font-size:0.75rem;"><b>'+s.pn+'</b> · '+this.REALMS[s.r].name+'【'+(this.DAOTU[s.daoTu]?this.DAOTU[s.daoTu].name:'')+'】<br><small style="color:'+(rt.mult>=1.5?'#ffd700':rt.mult>=1?'#c7b58a':'#7a6a8b')+';">'+rt.name+'('+rt.desc+')</small>'+(s.tech?'<small style="color:#80d0ff;"> | '+s.tech.name+'</small>':'')+'<br><small style="color:#b7a17c;">攻'+s.ba+' 防'+s.df+eqinfo+'</small><br><small style="color:#c9a0ff;">🔮'+s.my+' 秘境币 · 业力 '+this.karmaLabel()+'</small></div></div>';
         return h;
+    },
+    _sceneTitle: function(sc){
+        var icons={cave:'🏔️ 洞府修炼',estate:'🏡 仙府洞天',sect:'🏯 宗门问道',wild:'🌲 荒郊野外',market:'🏪 坊市交易',dungeon:'💀 副本探险',secret:'✨ 秘境寻宝',arena:'⚔️ 竞技斗法'};
+        return '<div class="scene-title">'+ (icons[sc]||sc) +'</div>';
     },
 
     // ===== 战斗可视化辅助 =====
@@ -2231,7 +2293,7 @@ var G = {
     _renderPn: function(sc){
         switch(sc){
         case 'cave':
-            var h=this._charHeader();
+            var h=this._charHeader()+this._sceneTitle(sc);
             h+='<div style="display:flex;flex-wrap:wrap;gap:0.3rem;justify-content:center;">';
             h+='<button class="btn pr" onclick="G.cultivate();G.save();">修炼</button>';
             h+='<button class="btn" onclick="G.subBreak();G.save();">小境界</button>';
@@ -2289,14 +2351,32 @@ var G = {
                 h+='<div class="card"><span>丹药：<span style="color:#ffd78b;">'+(pstr||'无')+'</span></span><button class="btn bs" onclick="G._showPills();">服用</button></div>';
             }
             // 飞升境: 转世飞升入口
-            if(this.s.r>=7) h+='<div class="card" style="border-color:#ffd78b;"><span>🏆 已臻飞升境！道统底蕴可传承后世</span><button class="btn gd" onclick="G.resetGame(true);">转世飞升（传承道统）</button></div>';
+            if(this.s.r>=7) h+='<div class="card" style="border-color:#ffd78b;"><span>🏆 已臻飞升境！道统底蕴可传承后世</span><button class="btn gd" onclick="G.resetGame(true,\'ascend\');">转世飞升（传承道统）</button></div>';
+            // ===== v8.0 法则领悟（飞升后长线成长） =====
+            if(this.s.r>=7){
+                var faSys={atk:'攻伐',def:'守御',time:'时空',karma:'因果',root:'本源'};
+                h+='<div class="card" style="border-color:#c9a0ff;"><span style="color:#c9a0ff;">🔮 法则领悟 · 法则点 <b>'+this.s.fa+'</b></span><br><small style="color:#9a8ab5;">飞升后长线成长，独立乘区不叠爆</small></div>';
+                var self3=this;
+                ['atk','def','time','karma','root'].forEach(function(sys){
+                    h+='<div style="font-size:0.72rem;color:#b7a17c;margin-top:0.25rem;">'+faSys[sys]+'系</div><div class="cg">';
+                    Object.keys(self3.FA).forEach(function(fid){
+                        var f=self3.FA[fid]; if(f.sys!==sys) return;
+                        var lv=self3.s.faLv[fid]||0, ok=self3._faReqOk(fid), cost=self3._faCost(fid);
+                        var act = lv>=f.max ? '<span style="font-size:0.65rem;color:#888;">满级</span>'
+                            : (ok ? '<button class="btn bs" onclick="G.faUp(\''+fid+'\');G.save();"'+(self3.s.fa<cost?' disabled':'')+'>'+(lv>0?'升级':'领悟')+'('+cost+')</button>'
+                                  : '<span style="font-size:0.65rem;color:#a96;">🔒'+(f.req==='yejing'?'需业镜':f.req==='lives2'?'需飞升≥2世':f.req==='lives1'?'需已转世':'')+'</span>');
+                        var wash = lv>0 ? '<button class="btn bs" onclick="G.faWash(\''+fid+'\');G.save();" style="color:#c88;">洗('+Math.floor(self3._faWashCost(fid))+')</button>' : '';
+                        h+='<div class="card"><span>'+f.name+' <small style="color:#c9a0ff;">Lv.'+lv+'/'+f.max+'</small><br><small style="color:#9a8;">'+(ok?f.desc:'需前置·'+f.desc)+'</small></span>'+act+wash+'</div>';
+                    });
+                    h+='</div>';
+                });
+            }
             // 逆天改命（仅高阶可见）
             if(this.s.r>=2) h+='<div class="card"><span style="color:#888;">逆天改命·重塑灵根</span><button class="btn bs" onclick="G.rerollRoot();G.save();">5000灵石</button></div>';
             document.getElementById('pnlCave').innerHTML=h;
             break;
         case 'estate':
-            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-estate.webp"></div>';
-            h+='<div style="font-size:0.8rem;color:#b7a17c;">仙府建造（提升永久属性）</div>';
+            var h=this._charHeader()+this._sceneTitle(sc)+'<div style="font-size:0.8rem;color:#b7a17c;">仙府建造（提升永久属性）</div>';
             h+='<div class="build-card"><span>灵田 Lv.'+(this.s.es.hf||0)+' (自动产药)</span><div><button class="btn bs" onclick="G.harvHerb();G.save();">收获</button><button class="btn bs'+(this.s.es.hf>=4?'" disabled':'"')+' onclick="G.upgEs(\'hf\');G.save();">升级('+([100,250,500,1000][this.s.es.hf||0]||'满')+')</button></div></div>';
             h+='<div class="build-card"><span>丹房 Lv.'+(this.s.es.ar||0)+' (提升炼丹)</span><button class="btn bs" onclick="G.upgEs(\'ar\');G.save();">升级('+([150,350,700,1500][this.s.es.ar||0]||'满')+')</button></div>';
             h+='<div class="build-card"><span>聚灵阵 Lv.'+(this.s.es.sa||0)+' (+'+(this.s.es.sa||0)*10+'%修炼速度)</span><button class="btn bs" onclick="G.upgEs(\'sa\');G.save();">升级('+([200,500,1000,2000][this.s.es.sa||0]||'满')+')</button></div>';
@@ -2311,8 +2391,7 @@ var G = {
             document.getElementById('pnlEstate').innerHTML=h;
             break;
         case 'sect':
-            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-sect.webp"></div>';
-            h+='<div style="font-size:0.85rem;">'+(this.s.sn?this.s.sn+'弟子':'散修')+'</div>';
+            var h=this._charHeader()+this._sceneTitle(sc)+'<div style="font-size:0.85rem;">'+(this.s.sn?this.s.sn+'弟子':'散修')+'</div>';
             h+='<div style="font-size:0.75rem;">贡献 <span style="color:#ffd78b;">'+this.s.ctr+'</span></div>';
             h+='<div style="display:flex;gap:0.3rem;flex-wrap:wrap;">';
             h+='<button class="btn bs" onclick="G.sectTask();G.save();">任务</button>';
@@ -2335,8 +2414,7 @@ var G = {
             document.getElementById('pnlSect').innerHTML=h;
             break;
         case 'wild':
-            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-wild.webp"></div>';
-            h+='<div class="combat-arena">';
+            var h=this._charHeader()+this._sceneTitle(sc)+'<div class="combat-arena">';
             this.s.mons.forEach(function(m){h+=G._enemyCard(m.name,m.hp,m.mhp,m.atk,false);});
             h+=this._playerCard();
             h+='</div>';
@@ -2359,8 +2437,7 @@ var G = {
             document.getElementById('pnlWild').innerHTML=h;
             break;
         case 'market':
-            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-market.webp"></div>';
-            h+='<div style="font-size:0.72rem;color:#b7a17c;">消耗品</div><div class="cg">';
+            var h=this._charHeader()+this._sceneTitle(sc)+'<div style="font-size:0.72rem;color:#b7a17c;">消耗品</div><div class="cg">';
             h+='<div class="card"><span>回灵丹(+40灵)</span><button class="btn bs" onclick="G.buySp();G.save();">15灵石</button></div>';
             h+='<div class="card"><span>悟道茶(+修为)</span><button class="btn bs" onclick="G._buyTea();G.save();">30灵石</button></div>';
             h+='<div class="card"><span>寿元果(+8寿)</span><button class="btn bs" onclick="G.buyLf();G.save();">500灵石</button></div>';
@@ -2386,7 +2463,7 @@ var G = {
             document.getElementById('pnlMarket').innerHTML=h;
             break;
         case 'secret':
-            h='<div class="npc-portrait"><img class="npc-img" src="game-assets/npc-secret.webp"></div>';
+            var h=this._charHeader()+this._sceneTitle(sc);
             var self=this;
             if(this.s.run){
                 var run=this.s.run;
