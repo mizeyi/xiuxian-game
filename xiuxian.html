@@ -287,7 +287,7 @@ body{display:flex;justify-content:center;align-items:center;padding:0.3rem;color
 var G = {
     SAVE_KEY: 'xiuxian_v23',
     MANUAL_KEY: 'xiuxian_v23_manual',
-    VER: '8.1',   // 游戏内置版本号；部署时由 _push.js 提取写入 version.json，启动时比对远端实现免硬刷更新
+    VER: '8.1.1',   // 游戏内置版本号；部署时由 _push.js 提取写入 version.json，启动时比对远端实现免硬刷更新
     
     REALMS: [
         {name:"炼气期",atkMul:2,spiritMax:100,lifeBonus:20,hpBase:80,subCost:[60,100]},
@@ -332,15 +332,15 @@ var G = {
         {id:"starBody",name:"星辰炼体术",tier:"地",cv:0.2,atk:0,def:0.25,hpMul:1.2,dunst:0,ssense:0,req:1,source:"副本"},
         {id:"daYan",name:"大衍诀",tier:"地",cv:0.6,atk:1.05,def:0.05,dunst:0,ssense:0.3,req:1,source:"秘境"},
         {id:"voidStep",name:"缩地成寸",tier:"天",cv:0.3,atk:0,def:0.05,dunst:0.4,ssense:0.1,req:3,source:"秘境"},
-        {id:"soulRefine",name:"炼神术",tier:"天",cv:0.3,atk:0.18,def:0,hpMul:1.1,dunst:0,ssense:0.4,req:2,source:"秘境/竞技"},
+        {id:"soulRefine",name:"炼神术",tier:"天",cv:0.3,atk:1.18,def:0,hpMul:1.1,dunst:0,ssense:0.4,req:2,source:"秘境/竞技"},
         {id:"chaosPrim",name:"混沌原始诀",tier:"天",cv:0.8,atk:1.1,def:0.1,dunst:0.2,ssense:0.2,req:3,source:"秘境/竞技"},
         // v8.1 扩充功法池：覆盖 攻/防/速/养 不同玩家决策
         {id:"taixu",name:"太虚养神诀",tier:"天",cv:0.45,atk:0,def:0.05,hpMul:1.15,dunst:0,ssense:0.5,req:3,source:"秘境"},
-        {id:"jiuzhuan",name:"九转玄功",tier:"地",cv:0.35,atk:0.2,def:0.1,hpMul:1.1,dunst:0,ssense:0,req:1,source:"副本/云游"},
+        {id:"jiuzhuan",name:"九转玄功",tier:"地",cv:0.35,atk:1.2,def:0.1,hpMul:1.1,dunst:0,ssense:0,req:1,source:"副本/云游"},
         {id:"xuesha",name:"血煞功",tier:"玄",cv:-0.05,atk:1.5,def:0,hpMul:0.95,dunst:0,ssense:0,req:0,source:"副本/竞技"},
         {id:"xuanwu",name:"玄武罡气",tier:"地",cv:0.15,atk:0,def:0.3,hpMul:1.25,dunst:0,ssense:0.1,req:2,source:"副本"},
         {id:"fengying",name:"风影遁法",tier:"玄",cv:0.2,atk:0,def:0.05,dunst:0.5,ssense:0,req:1,source:"云游/秘境"},
-        {id:"wanxiang",name:"万象森罗诀",tier:"天",cv:0.5,atk:0.15,def:0.1,hpMul:1.1,dunst:0.2,ssense:0.2,req:4,source:"秘境/竞技"},
+        {id:"wanxiang",name:"万象森罗诀",tier:"天",cv:0.5,atk:1.15,def:0.1,hpMul:1.1,dunst:0.2,ssense:0.2,req:4,source:"秘境/竞技"},
     ],
     // 功法池：每个境界确保每池至少2个可选功法
     techPools: {
@@ -447,7 +447,7 @@ var G = {
             achs:{},drs:0,dts:{},
             logs:["踏入仙途..."],evact:false,
             aopp:null,
-            auto:false,autoEv:true,combo:false,lastSeen:Date.now(),bornAt:Date.now(),fa:0,faLv:{},faWash:0,
+            auto:false,autoEv:true,combo:false,autoAlch:false,lastSeen:Date.now(),bornAt:Date.now(),fa:0,faLv:{},faWash:0,
             // ===== v6 道途 + 轮回 =====
             daoTu:'san',                 // 当前道途: san/jian/dan/ti/zhen/fu
             jy:0,jz:0,fz:0,lm:0,         // 路径专属资源: 剑意/阵基/符纸/灵墨
@@ -1065,6 +1065,26 @@ var G = {
         this.refresh();
     },
     _autoStop: function(){if(this._autoTimer){clearInterval(this._autoTimer);this._autoTimer=null;}if(this.s)this.s.auto=false;},
+    toggleAutoAlch: function(){
+        this.s.autoAlch=!this.s.autoAlch;
+        if(this.s.autoAlch){
+            var self=this;
+            this._alchTimer=setInterval(function(){
+                if(!self.s.autoAlch){clearInterval(self._alchTimer);self._alchTimer=null;return;}
+                if(self.s.evact) return;
+                if(self.s.hb<1){ self.s.autoAlch=false; clearInterval(self._alchTimer); self._alchTimer=null; self.log("自动炼丹结束：药材耗尽"); self.refresh(); return; }
+                var need=Math.min(5,self.s.hb)*6;
+                if(self.s.ss<need){ self.s.autoAlch=false; clearInterval(self._alchTimer); self._alchTimer=null; self.log("自动炼丹结束：灵石不足"); self.refresh(); return; }
+                self.alchemyCv();
+            },1200);
+            this.log("开启自动炼丹（挂机）");
+        }else{
+            if(this._alchTimer){clearInterval(this._alchTimer);this._alchTimer=null;}
+            this.log("关闭自动炼丹");
+        }
+        this.refresh();
+    },
+    _autoAlchStop: function(){if(this._alchTimer){clearInterval(this._alchTimer);this._alchTimer=null;}if(this.s)this.s.autoAlch=false;},
     toggleCombo: function(){
         this.s.combo=!this.s.combo;
         if(this.s.combo){
@@ -2071,7 +2091,7 @@ var G = {
         }catch(e){console.warn('导入失败',e);this._toast('导入失败：'+(e.message||'存档损坏'));}
     },
     resetGame: function(sil, cause){
-        this._autoStop();this._comboStop();
+        this._autoStop();this._comboStop();this._autoAlchStop();
         var leg=this.legacyOf();
         /* v8.0: 死亡/飞升/主动重修统一先展示结算画面，玩家看本世总结后选择转世或彻底重开；
            不再在展示前清档（_hardReset 才清），结算期间存档保留更安全 */
@@ -2426,7 +2446,7 @@ var G = {
                 h+='<div class="card"><span>丹药：<span style="color:#ffd78b;">'+(pstr||'无')+'</span></span><button class="btn bs" onclick="G._showPills();">服用</button></div>';
             }
             // v8.1 一键炼丹：药材→修为
-            h+='<div class="card" style="border-color:#7fc97f;"><span>🍵 一键炼丹 <small>药材'+this.s.hb+'→修为</small></span><button class="btn bs" onclick="G.alchemyCv();G.save();">炼制(5药材)</button></div>';
+            h+='<div class="card" style="border-color:#7fc97f;"><span>🍵 一键炼丹 <small>药材'+this.s.hb+'→修为</small></span><div style="display:flex;gap:0.3rem;margin-top:0.3rem;align-items:center;"><button class="btn bs" onclick="G.alchemyCv();G.save();">炼制(5药材)</button><div class="toggle'+(this.s.autoAlch?' on':'')+'" onclick="G.toggleAutoAlch();G.save();"></div><span style="font-size:0.7rem;color:#9a8;">'+(this.s.autoAlch?'自动中':'自动')+'</span></div></div>';
             // 飞升境: 转世飞升入口
             if(this.s.r>=7) h+='<div class="card" style="border-color:#ffd78b;"><span>🏆 已臻飞升境！道统底蕴可传承后世</span><button class="btn gd" onclick="G.resetGame(true,\'ascend\');">转世飞升（传承道统）</button></div>';
             // ===== v8.0 法则领悟（飞升后长线成长） =====
@@ -2469,7 +2489,7 @@ var G = {
             });
             // v8.1 一键炼丹：药材→修为（与洞府一致，丹房主题入口）
             h+='<div style="font-size:0.8rem;color:#b7a17c;margin-top:0.3rem;">一键炼丹（药材化修为）</div>';
-            h+='<div class="card" style="border-color:#7fc97f;"><span>🍵 炼丹·化修为 <small>药材'+this.s.hb+'→修为</small></span><button class="btn bs" onclick="G.alchemyCv();G.save();">炼制(5药材)</button></div>';
+            h+='<div class="card" style="border-color:#7fc97f;"><span>🍵 炼丹·化修为 <small>药材'+this.s.hb+'→修为</small></span><div style="display:flex;gap:0.3rem;margin-top:0.3rem;align-items:center;"><button class="btn bs" onclick="G.alchemyCv();G.save();">炼制(5药材)</button><div class="toggle'+(this.s.autoAlch?' on':'')+'" onclick="G.toggleAutoAlch();G.save();"></div><span style="font-size:0.7rem;color:#9a8;">'+(this.s.autoAlch?'自动中':'自动')+'</span></div></div>';
             document.getElementById('pnlEstate').innerHTML=h;
             break;
         case 'sect':
@@ -2835,6 +2855,7 @@ var G = {
             }
             this.startAutosave();
             if(this.s&&this.s.auto) this.toggleAuto();
+            if(this.s&&this.s.autoAlch) this.toggleAutoAlch();
             this._checkUpdate(); // v8.0.1: 启动后自检远端版本，无需手动硬刷新
             try{var vt=document.getElementById('verTag');if(vt)vt.textContent='v'+this.VER;}catch(e){} // v8.0.4: 顶栏显示版本号，便于确认是否命中旧缓存
         }catch(e){
